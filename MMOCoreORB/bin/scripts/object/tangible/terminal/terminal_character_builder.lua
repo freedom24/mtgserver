@@ -2849,22 +2849,22 @@ object_tangible_terminal_terminal_character_builder = object_tangible_terminal_s
 				
 				"Post 14 Special Melee Weapons",
 				{
-					"Wookiee Knuckler WOD", "object/weapon/melee/special/wookiee_knuckler_wod.iff",
-					"Wookiee Knuckler", "object/weapon/melee/special/ep3/wookiee_knuckler.iff",
-					"War Fan", "object/weapon/melee/special/wod_war_fan.iff",
-					"vibroknuckler Static", "object/weapon/melee/special/vibroknuckler_static.iff",
-					"vibroknuckler NPE", "object/weapon/melee/special/vibroknuckler_npe.iff",
-					"PVP BF Knuckler", "object/weapon/melee/special/pvp_bf_knuckler.iff",
-					"Punch Dagger", "object/weapon/melee/special/punch_dagger.iff",
-					"Massassi Knuckler Generic", "object/weapon/melee/special/massassiknuckler_generic.iff",
+					"Spiked Knuckles", "object/weapon/melee/special/wookiee_knuckler_wod.iff",
+					"Knuckles Of The Katarn", "object/weapon/melee/special/ep3/wookiee_knuckler.iff",
+					"Witch's War Fan", "object/weapon/melee/special/wod_war_fan.iff",
+					"Vibroknuckler Static", "object/weapon/melee/special/vibroknuckler_static.iff",
+					"NPE Vibro", "object/weapon/melee/special/vibroknuckler_npe.iff",
+					"Buzz Knuck", "object/weapon/melee/special/pvp_bf_knuckler.iff",
+					"Tenebrous Edge", "object/weapon/melee/special/punch_dagger.iff",
+					--"Massassi Knuckler Generic", "object/weapon/melee/special/massassiknuckler_generic.iff",
 					"Massassi Knuckler", "object/weapon/melee/special/massassiknuckler.iff",
-					"Loot Necrosis", "object/weapon/melee/special/ep3_loot_necrosis.iff",
-					"Loot Soulstinger", "object/weapon/melee/special/ep3_loot_soulstinger.iff",
+					"Necrosis Nightblade", "object/weapon/melee/special/ep3_loot_necrosis.iff",
+					"Sayormi Soulstinger", "object/weapon/melee/special/ep3_loot_soulstinger.iff",
 					"Blasterfist Generic", "object/weapon/melee/special/blasterfist_generic.iff",
 					"Blasterfist", "object/weapon/melee/special/blasterfist.iff",
 					"Blacksun Razor Generic", "object/weapon/melee/special/blacksun_razor_generic.iff",
-					"Fan Metal", "object/weapon/melee/special/fan_metal.iff",
-					"Loot Heartstriker", "object/weapon/melee/special/ep3_loot_heartstriker.iff"
+					"Metal Combat Fan", "object/weapon/melee/special/fan_metal.iff",
+					"Sayormi Heartstriker", "object/weapon/melee/special/ep3_loot_heartstriker.iff"
 				},
 				"Post 14 2h Swords",
 				{
@@ -2875,18 +2875,18 @@ object_tangible_terminal_terminal_character_builder = object_tangible_terminal_s
 					"2h Massassi Sword", "object/weapon/melee/2h_sword/som_2h_sword_massassi.iff",
 					"2h Sword Maul", "object/weapon/melee/2h_sword/quest_2h_sword_maul.iff",
 					"2h Battleaxe", "object/weapon/melee/2h_sword/quest_2h_sword_battleaxe.iff",
-					"2h Sword WOD", "object/weapon/melee/2h_sword/2h_sword_wod_sword.iff",
-					"2h Scyth WOD", "object/weapon/melee/2h_sword/2h_sword_wod_scyth.iff",
+					--"2h Sword WOD", "object/weapon/melee/2h_sword/2h_sword_wod_sword.iff",
+					--"2h Scyth WOD", "object/weapon/melee/2h_sword/2h_sword_wod_scyth.iff",
 					"2h Sword Sith WOD", "object/weapon/melee/2h_sword/2h_sword_sith_wod.iff",
 					"2h Sword Sith Generic", "object/weapon/melee/2h_sword/2h_sword_sith_generic.iff",
 					"2h Sword Sith", "object/weapon/melee/2h_sword/2h_sword_sith.iff",
 					"2h Sword PVP BF 1", "object/weapon/melee/2h_sword/2h_sword_pvp_bf_01.iff",
 					"2h Sword Maul Legendary", "object/weapon/melee/2h_sword/2h_sword_maul_legendary.iff",
 					"2h Sword Kun Massassi", "object/weapon/melee/2h_sword/2h_sword_kun_massassi.iff",
-					"2h Sword Katana Generic", "object/weapon/melee/2h_sword/2h_sword_katana_generic.iff",
+					--"2h Sword Katana Generic", "object/weapon/melee/2h_sword/2h_sword_katana_generic.iff",
 					"2h Sword Kashyyyk", "object/weapon/melee/2h_sword/2h_sword_kashyyk_wod.iff",
 					"2h Sword Kashyyyk", "object/weapon/melee/2h_sword/2h_sword_kashyyk.iff",
-					"2h Sword Cleaver NPE", "object/weapon/melee/2h_sword/2h_sword_cleaver_npe.iff",
+					--"2h Sword Cleaver NPE", "object/weapon/melee/2h_sword/2h_sword_cleaver_npe.iff",
 					"Loot Lifeblood", "object/weapon/melee/2h_sword/ep3_loot_lifeblood.iff",
 					"Loot Executer", "object/weapon/melee/2h_sword/ep3_loot_executer.iff",
 					"Loot Sickle WOD", "object/weapon/melee/2h_sword/ep3_loot_sickle_wod.iff",
@@ -2898,11 +2898,11 @@ object_tangible_terminal_terminal_character_builder = object_tangible_terminal_s
 				},
 				"Post 14 Batons",
 				{
-					"Xantha Smasher", "object/weapon/melee/baton/xantha_smasher.iff",
-					"Mandovial Smasher", "object/weapon/melee/baton/mandoviol_smasher.iff",
+					--"Xantha Smasher", "object/weapon/melee/baton/xantha_smasher.iff",--Tre Error object.iff has wrong appearance of musical instrument
+					--"Mandovial Smasher", "object/weapon/melee/baton/mandoviol_smasher.iff",--Tre Error object.iff has wrong appearance of musical instrument
 					"Stun Baton Legendary", "object/weapon/melee/baton/baton_stun_legendary.iff",
 					"Gaderiffi Baton NPE", "object/weapon/melee/baton/baton_gaderiffi_npe.iff",
-					"Gaderiffi Baton Elite", "object/weapon/melee/baton/baton_gaderiffi_elite.iff",
+					--"Gaderiffi Baton Elite", "object/weapon/melee/baton/baton_gaderiffi_elite.iff", --String error
 					"Avatar Trando Stun Stick", "object/weapon/melee/baton/baton_avatar_trando_stun_stick.iff"
 				},
 				"Post 14 Knives",
@@ -2933,7 +2933,7 @@ object_tangible_terminal_terminal_character_builder = object_tangible_terminal_s
 					"Massassi Lance", "object/weapon/melee/polearm/lance_massassi.iff",
 					"Kashyyyk Lance Generic", "object/weapon/melee/polearm/lance_kashyyk_generic.iff",
 					"Kashyyyk Lance", "object/weapon/melee/polearm/lance_kashyyk.iff",
-					"Kaminoan Lance Generic", "object/weapon/melee/polearm/lance_kaminoan_generic.iff",
+					--"Kaminoan Lance Generic", "object/weapon/melee/polearm/lance_kaminoan_generic.iff",
 					"Kaminoan Lance", "object/weapon/melee/polearm/lance_kaminoan.iff",
 					"GCW Gand Shockprod", "object/weapon/melee/polearm/lance_gcw_gand_shockprod.iff",
 					"Electric Polearm", "object/weapon/melee/polearm/lance_electric_polearm.iff",
@@ -2949,8 +2949,8 @@ object_tangible_terminal_terminal_character_builder = object_tangible_terminal_s
 				"Post 14 Swords",
 				{
 					"Wookiee Sword", "object/weapon/melee/sword/sword_wookiee.iff",
-					"Sword WOD", "object/weapon/melee/sword/sword_wod_sword.iff",
-					"Schyth WOD", "object/weapon/melee/sword/sword_wod_scyth.iff",
+					--"Sword WOD", "object/weapon/melee/sword/sword_wod_sword.iff",--tre error missing blade
+					--"Schyth WOD", "object/weapon/melee/sword/sword_wod_scyth.iff",--tre error missing blade
 					"RSF Sword Generic", "object/weapon/melee/sword/sword_rsf_generic.iff",
 					"RSF Sword", "object/weapon/melee/sword/sword_rsf.iff",
 					"Rebel Sword", "object/weapon/melee/sword/sword_rebel.iff",
