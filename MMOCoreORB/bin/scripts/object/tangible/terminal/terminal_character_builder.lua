@@ -2964,7 +2964,7 @@ object_tangible_terminal_terminal_character_builder = object_tangible_terminal_s
 					"Junti Mace", "object/weapon/melee/sword/sword_mace_junti.iff",
 					"Avatar Wookiee Spiritblade", "object/weapon/melee/sword/sword_avatar_wke_spiritblade.iff",
 					"Acid Sword", "object/weapon/melee/sword/sword_acid.iff",
-					"Sword 02 Generic", "object/weapon/melee/sword/sword_02_generic.iff",
+					--"Sword 02 Generic", "object/weapon/melee/sword/sword_02_generic.iff",
 					"Sword 01 Static", "object/weapon/melee/sword/sword_01_static.iff",
 					"Sword 01 NPE", "object/weapon/melee/sword/sword_01_npe.iff",
 					"Obsidian Generic", "object/weapon/melee/sword/som_sword_obsidian_generic.iff",
