@@ -73,6 +73,7 @@
 #include "server/zone/managers/player/BadgeList.h"
 #include "server/zone/managers/player/LuaQuestInfo.h"
 #include "server/zone/objects/tangible/misc/FsPuzzlePack.h"
+#include "server/zone/objects/tangible/misc/CustomIngredient.h"
 
 int DirectorManager::DEBUG_MODE = 0;
 int DirectorManager::ERROR_CODE = NO_ERROR;
@@ -463,6 +464,8 @@ void DirectorManager::initializeLuaEngine(Lua* luaEngine) {
 	Luna<LuaTicketObject>::Register(luaEngine->getLuaState());
 	Luna<LuaQuestInfo>::Register(luaEngine->getLuaState());
 	Luna<LuaFsPuzzlePack>::Register(luaEngine->getLuaState());
+	Luna<LuaResourceSpawn>::Register(luaEngine->getLuaState());
+	Luna<LuaCustomIngredient>::Register(luaEngine->getLuaState());
 }
 
 int DirectorManager::loadScreenPlays(Lua* luaEngine) {
@@ -2036,26 +2039,55 @@ int DirectorManager::createObserver(lua_State* L) {
 }
 
 int DirectorManager::dropObserver(lua_State* L) {
-	if (checkArgumentCount(L, 2) > 0) {
+	int numberOfArguments = lua_gettop(L);
+	if (numberOfArguments != 2 && numberOfArguments != 4) {
 		instance()->error("incorrect number of arguments passed to DirectorManager::dropObserver");
 		ERROR_CODE = INCORRECT_ARGUMENTS;
 		return 0;
 	}
 
-	SceneObject* sceneObject = (SceneObject*) lua_touserdata(L, -1);
-	uint32 eventType = lua_tonumber(L, -2);
+	SceneObject* sceneObject = NULL;
+	uint32 eventType = 0;
 
-	if (sceneObject == NULL)
-		return 0;
+	if (numberOfArguments == 2) {
+		sceneObject = (SceneObject*) lua_touserdata(L, -1);
+		eventType = lua_tointeger(L, -2);
 
-	SortedVector<ManagedReference<Observer* > > observers = sceneObject->getObservers(eventType);
-	for (int i = 0; i < observers.size(); i++) {
-		Observer* observer = observers.get(i).get();
-		if (observer != NULL && observer->isObserverType(ObserverType::SCREENPLAY)) {
-			sceneObject->dropObserver(eventType, observer);
+		if (sceneObject == NULL)
+			return 0;
 
-			if (observer->isPersistent())
-				ObjectManager::instance()->destroyObjectFromDatabase(observer->_getObjectID());
+		SortedVector<ManagedReference<Observer* > > observers = sceneObject->getObservers(eventType);
+		for (int i = 0; i < observers.size(); i++) {
+			Observer* observer = observers.get(i).get();
+			if (observer != NULL && observer->isObserverType(ObserverType::SCREENPLAY)) {
+				sceneObject->dropObserver(eventType, observer);
+
+				if (observer->isPersistent())
+					ObjectManager::instance()->destroyObjectFromDatabase(observer->_getObjectID());
+			}
+		}
+	} else {
+		sceneObject = (SceneObject*) lua_touserdata(L, -1);
+		String key = lua_tostring(L, -2);
+		String play = lua_tostring(L, -3);
+		eventType = lua_tointeger(L, -4);
+
+		if (sceneObject == NULL)
+			return 0;
+
+		SortedVector<ManagedReference<Observer* > > observers = sceneObject->getObservers(eventType);
+		for (int i = 0; i < observers.size(); i++) {
+			Observer* observer = observers.get(i).get();
+			if (observer != NULL && observer->isObserverType(ObserverType::SCREENPLAY)) {
+				ManagedReference<ScreenPlayObserver*> spObserver = dynamic_cast<ScreenPlayObserver*>(observer);
+
+				if (spObserver->getScreenPlay() == play && spObserver->getScreenKey() == key) {
+					sceneObject->dropObserver(eventType, observer);
+
+					if (observer->isPersistent())
+						ObjectManager::instance()->destroyObjectFromDatabase(observer->_getObjectID());
+				}
+			}
 		}
 	}
 
