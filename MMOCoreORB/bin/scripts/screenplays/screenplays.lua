@@ -4,15 +4,11 @@ require("themeParkLogic")
 require("corvetteTicketGiverLogic")
 require("corvetteTicketTakerLogic")
 
-<<<<<<< HEAD
---New Content
-includeFile("custom_content/screenplays.lua")
-=======
 -- SUI
 require("sui.SuiTemplate")
 require("sui.SuiListBox")
 require("sui.SuiSample")
->>>>>>> core3/unstable
+
 
 -- Theme parks
 includeFile("themepark/conversations/goru_conv_handler.lua")
@@ -30,6 +26,8 @@ includeFile("themepark/jabba/themeParkJabba.lua")
 includeFile("themepark/valarian/themeParkValarian.lua")
 includeFile("themepark/marauder/themeParkMarauder.lua")
 
+--New Content
+includeFile("custom_content/screenplays.lua")
 
 -- GCW
 includeFile("gcw/newsnet.lua")
