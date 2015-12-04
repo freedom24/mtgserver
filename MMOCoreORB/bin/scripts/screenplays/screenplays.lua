@@ -4,8 +4,15 @@ require("themeParkLogic")
 require("corvetteTicketGiverLogic")
 require("corvetteTicketTakerLogic")
 
+<<<<<<< HEAD
 --New Content
 includeFile("custom_content/screenplays.lua")
+=======
+-- SUI
+require("sui.SuiTemplate")
+require("sui.SuiListBox")
+require("sui.SuiSample")
+>>>>>>> core3/unstable
 
 -- Theme parks
 includeFile("themepark/conversations/goru_conv_handler.lua")
@@ -79,6 +86,7 @@ includeFile("village/convos/phase1/sivarra_phase1_conv_handler.lua")
 includeFile("village/convos/phase1/med_droid_phase1_conv_handler.lua")
 includeFile("village/convos/phase1/whip_phase1_conv_handler.lua")
 includeFile("village/convos/phase1/fs_reflex1_prisoner_conv_handler.lua")
+includeFile("village/convos/phase2/whip_phase2_conv_handler.lua")
 
 -- Events
 includeFile("events/conversations/bestine_artist_conv_handler.lua")
@@ -158,11 +166,13 @@ includeFile("tasks/naboo/arven_wendik.lua")
 includeFile("tasks/naboo/boss_nass.lua")
 includeFile("tasks/naboo/captain_gavyn_sykes.lua")
 includeFile("tasks/naboo/huff_zinga.lua")
+includeFile("tasks/naboo/kima_nazith.lua")
 includeFile("tasks/naboo/lareen_dantara.lua")
 includeFile("tasks/naboo/leb_slesher.lua")
 includeFile("tasks/naboo/lergo_brazee.lua")
 includeFile("tasks/naboo/librarian.lua")
 includeFile("tasks/naboo/mullud_bombo.lua")
+includeFile("tasks/naboo/pooja_naberrie.lua")
 includeFile("tasks/naboo/rovim_minnoni.lua")
 includeFile("tasks/naboo/tamvar_senzen.lua")
 includeFile("tasks/naboo/vana_sage.lua")
