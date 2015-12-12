@@ -5,9 +5,13 @@ require("corvetteTicketGiverLogic")
 require("corvetteTicketTakerLogic")
 
 -- SUI
+--require("sui.SuiSample")
 require("sui.SuiTemplate")
 require("sui.SuiListBox")
-require("sui.SuiSample")
+require("sui.SuiMessageBox")
+require("sui.SuiInputBox")
+require("sui.SuiQuestPopup")
+require("sui.SuiRadiationSensor")
 
 -- Theme parks
 includeFile("themepark/conversations/goru_conv_handler.lua")
@@ -25,6 +29,9 @@ includeFile("themepark/jabba/themeParkJabba.lua")
 includeFile("themepark/valarian/themeParkValarian.lua")
 includeFile("themepark/marauder/themeParkMarauder.lua")
 
+-- Staff tools
+includeFile("tools/tools.lua")
+includeFile("tools/shuttle_dropoff.lua")
 
 -- GCW
 includeFile("gcw/newsnet.lua")
@@ -82,6 +89,7 @@ includeFile("village/convos/phase1/med_droid_phase1_conv_handler.lua")
 includeFile("village/convos/phase1/whip_phase1_conv_handler.lua")
 includeFile("village/convos/phase1/fs_reflex1_prisoner_conv_handler.lua")
 includeFile("village/convos/phase2/whip_phase2_conv_handler.lua")
+includeFile("village/convos/phase2/dageerin_phase2_conv_handler.lua")
 
 -- Events
 includeFile("events/conversations/bestine_artist_conv_handler.lua")
@@ -248,6 +256,7 @@ includeFile("caves/naboo_narglatch_cave.lua")
 includeFile("caves/naboo_pirate_bunker.lua")
 includeFile("caves/naboo_veermok_cave.lua")
 includeFile("caves/rori_borgle_bat_cave.lua")
+includeFile("caves/rori_black_sun_outpost_bunker.lua")
 includeFile("caves/rori_giant_bark_mite_cave.lua")
 includeFile("caves/rori_kobola_bunker.lua")
 includeFile("caves/rori_pygmy_torton_cave.lua")
