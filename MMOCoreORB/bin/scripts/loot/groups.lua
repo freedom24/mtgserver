@@ -110,6 +110,7 @@ includeFile("groups/npc/borvos_common.lua")
 includeFile("groups/npc/canyon_corsair_common.lua")
 includeFile("groups/npc/chunker_common.lua")
 includeFile("groups/npc/corsec_weapons.lua")
+includeFile("groups/npc/dark_jedi_common.lua")
 includeFile("groups/npc/desert_demon_common.lua")
 includeFile("groups/npc/desert_swooper_common.lua")
 includeFile("groups/npc/dim_u_common.lua")
@@ -294,6 +295,9 @@ includeFile("groups/theme_park_reward/theme_park_reward_rebel_mon_mothma.lua")
 includeFile("groups/theme_park_reward/theme_park_reward_rebel_nien_nunb.lua")
 includeFile("groups/theme_park_reward/theme_park_reward_rebel_qualdo_herm.lua")
 includeFile("groups/theme_park_reward/theme_park_reward_rebel_wedge_antilles.lua")
+
+--village of aurilia sub-folder
+includeFile("groups/village_of_aurilia/village_resources.lua")
 
 -- weapon sub-folder
 includeFile("groups/weapon/carbines.lua")
