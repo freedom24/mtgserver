@@ -30,14 +30,14 @@ includeFile("themepark/jabba/themeParkJabba.lua")
 includeFile("themepark/valarian/themeParkValarian.lua")
 includeFile("themepark/marauder/themeParkMarauder.lua")
 
-<<<<<<< HEAD
+
 --New Content
 includeFile("custom_content/screenplays.lua")
-=======
+
 -- Staff tools
 includeFile("tools/tools.lua")
 includeFile("tools/shuttle_dropoff.lua")
->>>>>>> core3/unstable
+
 
 -- GCW
 includeFile("gcw/newsnet.lua")
