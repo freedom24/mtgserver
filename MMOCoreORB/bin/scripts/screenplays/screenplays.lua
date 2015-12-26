@@ -37,6 +37,7 @@ includeFile("custom_content/screenplays.lua")
 -- Staff tools
 includeFile("tools/tools.lua")
 includeFile("tools/shuttle_dropoff.lua")
+includeFile("tools/firework_event.lua")
 
 
 -- GCW
