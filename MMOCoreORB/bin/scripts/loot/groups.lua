@@ -19,6 +19,7 @@ includeFile("groups/junk.lua")
 includeFile("groups/klin_nif_drop.lua")
 includeFile("groups/loot_kit_parts.lua")
 includeFile("groups/looted_container.lua")
+includeFile("groups/mellichae_outro.lua")
 includeFile("groups/printer_parts.lua")
 includeFile("groups/rageon_vart_drop.lua")
 includeFile("groups/sith_shadow_encounter_datapad.lua")
@@ -299,6 +300,7 @@ includeFile("groups/theme_park_reward/theme_park_reward_rebel_wedge_antilles.lua
 
 --village of aurilia sub-folder
 includeFile("groups/village_of_aurilia/village_resources.lua")
+includeFile("groups/village_of_aurilia/sivarra_reward_necklace.lua")
 
 -- weapon sub-folder
 includeFile("groups/weapon/carbines.lua")
