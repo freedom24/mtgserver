@@ -137,6 +137,7 @@ ZonesEnabled = {
 TrePath = "/home/swgemu/workspace/tre"
 
 TreFiles = {
+	"mtg_patch_014_worldbuilding_01.tre",
 	"mtg_patch_013_configurable_02.tre",
 	"mtg_patch_012_configurable_01.tre",
 	"mtg_patch_011_files_01.tre",
