@@ -1,12 +1,13 @@
 local ObjectManager = require("managers.object.object_manager")
 
 SuiReceiverPuzzle = {}
-function SuiReceiverPuzzle:openPuzzle(pCreatureObject, pPuzzle)
+function SuiReceiverPuzzle:openPuzzle(pCreatureObject, pPuzzle, pCalibrator)
 	local sui = SuiCalibrationGame3.new("SuiReceiverPuzzle", "defaultCallback")
 	local playerID = SceneObject(pCreatureObject):getObjectID()
+	writeData(playerID .. ":calibratorComponentID", SceneObject(pPuzzle):getObjectID())
 
-	sui.setTargetNetworkId(SceneObject(pPuzzle):getObjectID())
-	sui.setForceCloseDistance(0)
+	sui.setTargetNetworkId(SceneObject(pCalibrator):getObjectID())
+	sui.setForceCloseDistance(10)
 
 	local goal = { 0, 0, 0 }
 	local current = { 0, 0, 0 }
@@ -75,11 +76,17 @@ function SuiReceiverPuzzle:defaultCallback(pPlayer, pSui, eventIndex, ...)
 		return
 	end
 
-	local puzzleID = suiPageData:getTargetNetworkId()
+	local puzzleID = readData(playerID .. ":calibratorComponentID")
 	local pPuzzle = getSceneObject(puzzleID)
 
 	if (pPuzzle == nil) then
 		printf("Error in SuiReceiverPuzzle:defaultCallback, pPuzzle nil.\n")
+		return
+	end
+
+	local pInventory = CreatureObject(pPlayer):getSlottedObject("inventory")
+
+	if pInventory == nil or SceneObject(pPuzzle):getParentID() ~= SceneObject(pInventory):getObjectID() then
 		return
 	end
 
