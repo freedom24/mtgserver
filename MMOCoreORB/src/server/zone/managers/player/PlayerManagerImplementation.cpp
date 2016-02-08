@@ -630,7 +630,7 @@ uint8 PlayerManagerImplementation::calculateIncapacitationTimer(CreatureObject* 
 	return recoveryTime;
 }
 
-int PlayerManagerImplementation::notifyDestruction(TangibleObject* destructor, TangibleObject* destructedObject, int condition) {
+int PlayerManagerImplementation::notifyDestruction(TangibleObject* destructor, TangibleObject* destructedObject, int condition, bool isCombatAction) {
 	if (destructor == NULL) {
 		assert(0 && "destructor should always be != NULL.");
 	}
@@ -662,11 +662,11 @@ int PlayerManagerImplementation::notifyDestruction(TangibleObject* destructor, T
 	}
 
 	if ((destructor->isKiller() && isDefender) || ghost->getIncapacitationCounter() >= 3) {
-		killPlayer(destructor, playerCreature, 0);
+		killPlayer(destructor, playerCreature, 0, isCombatAction);
 	} else {
-		playerCreature->setCurrentSpeed(0);
-		playerCreature->setPosture(CreaturePosture::INCAPACITATED, false);
-		playerCreature->updateLocomotion();
+
+
+		playerCreature->setPosture(CreaturePosture::INCAPACITATED, !isCombatAction, !isCombatAction);
 
 		uint32 incapTime = calculateIncapacitationTimer(playerCreature, condition);
 		playerCreature->setCountdownTimer(incapTime, true);
@@ -692,7 +692,7 @@ int PlayerManagerImplementation::notifyDestruction(TangibleObject* destructor, T
 	return 0;
 }
 
-void PlayerManagerImplementation::killPlayer(TangibleObject* attacker, CreatureObject* player, int typeofdeath) {
+void PlayerManagerImplementation::killPlayer(TangibleObject* attacker, CreatureObject* player, int typeofdeath, bool isCombatAction) {
 	StringIdChatParameter stringId;
 
 	if (attacker->isPlayerCreature()) {
@@ -708,9 +708,7 @@ void PlayerManagerImplementation::killPlayer(TangibleObject* attacker, CreatureO
 
 	player->clearDots();
 
-	player->setCurrentSpeed(0);
-	player->setPosture(CreaturePosture::DEAD, false);
-	player->updateLocomotion();
+	player->setPosture(CreaturePosture::DEAD, !isCombatAction, !isCombatAction);
 
 	sendActivateCloneRequest(player, typeofdeath);
 
@@ -807,7 +805,7 @@ void PlayerManagerImplementation::sendActivateCloneRequest(CreatureObject* playe
 	CloningBuildingObjectTemplate* cbot = cast<CloningBuildingObjectTemplate*>(closestCloning->getObjectTemplate());
 
 	//Check if player is city banned where the closest facility is or if it's not a valid cloner
-	if ((cr != NULL && cr->isBanned(playerID)) || cbot == NULL) {
+	if ((cr != NULL && cr->isBanned(playerID)) || cbot == NULL || (cbot->getFaction() != 0 && cbot->getFaction() != player->getFaction())) {
 		int distance = 50000;
 		for (int j = 0; j < locations.size(); j++) {
 			ManagedReference<SceneObject*> location = locations.get(j);
@@ -817,7 +815,7 @@ void PlayerManagerImplementation::sendActivateCloneRequest(CreatureObject* playe
 
 			cbot = cast<CloningBuildingObjectTemplate*>(location->getObjectTemplate());
 
-			if (cbot == NULL)
+			if (cbot == NULL || (cbot->getFaction() != 0 && cbot->getFaction() != player->getFaction()))
 				continue;
 
 			cr = location->getCityRegion();
@@ -929,7 +927,7 @@ void PlayerManagerImplementation::sendPlayerToCloner(CreatureObject* player, uin
 		player->addShockWounds(100, true);
 	}
 
-	if (ghost->getFactionStatus() != FactionStatus::ONLEAVE)
+	if (ghost->getFactionStatus() != FactionStatus::ONLEAVE && cbot->getFaction() == 0)
 		ghost->setFactionStatus(FactionStatus::ONLEAVE);
 
 	if (ghost->hasPvpTef())
@@ -2860,6 +2858,11 @@ void PlayerManagerImplementation::lootAll(CreatureObject* player, CreatureObject
 	int cashCredits = ai->getCashCredits();
 
 	if (cashCredits > 0) {
+		int luck = player->getSkillMod("force_luck");
+
+		if (luck > 0)
+			cashCredits += (cashCredits * luck) / 20;
+
 		player->addCashCredits(cashCredits, true);
 		ai->setCashCredits(0);
 

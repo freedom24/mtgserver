@@ -34,6 +34,7 @@
 #include "server/zone/objects/tangible/tool/repair/RepairTool.h"
 #include "server/zone/managers/player/PlayerManager.h"
 #include "server/zone/managers/creature/PetManager.h"
+#include "server/zone/managers/faction/FactionManager.h"
 #include "server/zone/objects/tangible/wearables/WearableObject.h"
 #include "server/zone/objects/intangible/PetControlDevice.h"
 #include "server/zone/objects/tangible/tool/antidecay/AntiDecayKit.h"
@@ -47,7 +48,7 @@ void TangibleObjectImplementation::initializeTransientMembers() {
 
 	setLoggingName("TangibleObject");
 
-	if (faction !=  0x16148850 && faction != 0xDB4ACC54) {
+	if (faction !=  FactionManager::FACTIONREBEL && faction != FactionManager::FACTIONIMPERIAL) {
 		faction = 0;
 	}
 }
@@ -502,7 +503,7 @@ void TangibleObjectImplementation::setConditionDamage(float condDamage, bool not
 	broadcastMessage(dtano3, true);
 }
 
-int TangibleObjectImplementation::inflictDamage(TangibleObject* attacker, int damageType, float damage, bool destroy, bool notifyClient) {
+int TangibleObjectImplementation::inflictDamage(TangibleObject* attacker, int damageType, float damage, bool destroy, bool notifyClient, bool isCombatAction) {
 	if(hasAntiDecayKit())
 		return 0;
 
@@ -523,12 +524,12 @@ int TangibleObjectImplementation::inflictDamage(TangibleObject* attacker, int da
 	}
 
 	if (newConditionDamage >= maxCondition)
-		notifyObjectDestructionObservers(attacker, newConditionDamage);
+		notifyObjectDestructionObservers(attacker, newConditionDamage, isCombatAction);
 
 	return 0;
 }
 
-int TangibleObjectImplementation::inflictDamage(TangibleObject* attacker, int damageType, float damage, bool destroy, const String& xp, bool notifyClient) {
+int TangibleObjectImplementation::inflictDamage(TangibleObject* attacker, int damageType, float damage, bool destroy, const String& xp, bool notifyClient, bool isCombatAction) {
 	if(hasAntiDecayKit())
 		return 0;
 
@@ -547,12 +548,12 @@ int TangibleObjectImplementation::inflictDamage(TangibleObject* attacker, int da
 	}
 
 	if (newConditionDamage >= maxCondition)
-		notifyObjectDestructionObservers(attacker, newConditionDamage);
+		notifyObjectDestructionObservers(attacker, newConditionDamage, isCombatAction);
 
 	return 0;
 }
 
-int TangibleObjectImplementation::notifyObjectDestructionObservers(TangibleObject* attacker, int condition) {
+int TangibleObjectImplementation::notifyObjectDestructionObservers(TangibleObject* attacker, int condition, bool isCombatAction) {
 	notifyObservers(ObserverEventType::OBJECTDESTRUCTION, attacker, condition);
 
 	if (threatMap != NULL)
@@ -967,6 +968,18 @@ bool TangibleObjectImplementation::isCityStatue(){
 
 bool TangibleObjectImplementation::isCityFountain(){
 	return (templateObject != NULL && templateObject->getFullTemplateString().contains("object/tangible/furniture/city/fountain"));
+}
+
+bool TangibleObjectImplementation::isRebel() const {
+	return faction == FactionManager::FACTIONREBEL;
+}
+
+bool TangibleObjectImplementation::isImperial() const {
+	return faction == FactionManager::FACTIONIMPERIAL;
+}
+
+bool TangibleObjectImplementation::isNeutral() const {
+	return faction == FactionManager::FACTIONNEUTRAL;
 }
 
 TangibleObject* TangibleObject::asTangibleObject() {

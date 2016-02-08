@@ -59,7 +59,7 @@ protected:
 	String effectString;
 
 	VectorMap<uint8, StateEffect> stateEffects;
-	VectorMap<uint64, DotEffect> dotEffects;
+	Vector<DotEffect> dotEffects;
 
 	uint8 attackType;
 	uint8 trails;
@@ -168,6 +168,21 @@ public:
 			return GENERALERROR;
 		}
 
+		if (creature->isPlayerCreature() && !targetObject->isPlayerCreature() && targetObject->getParentID() != 0 && creature->getParentID() != targetObject->getParentID()) {
+			Reference<CellObject*> targetCell = targetObject->getParent().castTo<CellObject*>();
+
+			if (targetCell != NULL) {
+				ContainerPermissions* perms = targetCell->getContainerPermissions();
+
+				if (!perms->hasInheritPermissionsFromParent()) {
+					if (!targetCell->checkContainerPermission(creature, ContainerPermissions::WALKIN)) {
+						creature->sendSystemMessage("@container_error_message:container18");
+						return GENERALERROR;
+					}
+				}
+			}
+		}
+
 		CombatManager* combatManager = CombatManager::instance();
 
 		bool shouldTef = false;
@@ -195,7 +210,7 @@ public:
 		}
 
 		try {
-			int res = combatManager->doCombatAction(creature, weapon, cast<TangibleObject*>(targetObject.get()), CreatureAttackData(arguments, this));
+			int res = combatManager->doCombatAction(creature, weapon, cast<TangibleObject*>(targetObject.get()), CreatureAttackData(arguments, this, target));
 
 			switch (res) {
 			case -1:
@@ -383,7 +398,7 @@ public:
 		return &(const_cast<CombatQueueCommand*>(this)->stateEffects);
 	}
 
-	inline VectorMap<uint64, DotEffect>* getDotEffects() const {
+	inline Vector<DotEffect>* getDotEffects() const {
 		return &(const_cast<CombatQueueCommand*>(this)->dotEffects);
 	}
 
@@ -411,7 +426,7 @@ public:
 		return const_cast<CombatQueueCommand*>(this)->stateEffects.get(type);
 	}
 
-	void setDotEffects(VectorMap<uint64, DotEffect> dotEffects) {
+	void setDotEffects(Vector<DotEffect> dotEffects) {
 		this->dotEffects = dotEffects;
 	}
 
@@ -440,11 +455,7 @@ public:
 	}
 
 	void addDotEffect(DotEffect dotEffect) {
-		dotEffects.put(dotEffect.getDotType(), dotEffect);
-	}
-
-	DotEffect getDotEffect(uint64 type) {
-		return dotEffects.get(type);
+		dotEffects.add(dotEffect);
 	}
 
 	void setConeRange(int i) {
@@ -502,7 +513,7 @@ public:
 		case CommandEffect::KNOCKDOWN:
 			if (!defender->checkKnockdownRecovery()) {
 				if (defender->getPosture() != CreaturePosture::UPRIGHT)
-					defender->setPosture(CreaturePosture::UPRIGHT);
+					defender->setPosture(CreaturePosture::UPRIGHT, false, false);
 				break;
 			}
 
@@ -512,7 +523,7 @@ public:
 			}
 
 			if (!defender->isDead() && !defender->isIncapacitated())
-				defender->setPosture(CreaturePosture::KNOCKEDDOWN);
+				defender->setPosture(CreaturePosture::KNOCKEDDOWN, false, false);
 
 			defender->updateKnockdownRecovery();
 			defender->updatePostureChangeDelay(5000);
@@ -524,7 +535,7 @@ public:
 		case CommandEffect::POSTUREUP:
 			if (!defender->checkPostureUpRecovery()) {
 				if (defender->getPosture() != CreaturePosture::UPRIGHT)
-					defender->setPosture(CreaturePosture::UPRIGHT);
+					defender->setPosture(CreaturePosture::UPRIGHT, false, false);
 				break;
 			}
 
@@ -534,11 +545,11 @@ public:
 			}
 
 			if (defender->getPosture() == CreaturePosture::PRONE) {
-				defender->setPosture(CreaturePosture::CROUCHED);
+				defender->setPosture(CreaturePosture::CROUCHED, false, false);
 				defender->sendSystemMessage("@cbt_spam:force_posture_change_1");
 				defender->sendStateCombatSpam("cbt_spam", "force_posture_change_1", 0, 0, false);
 			} else if (defender->getPosture() == CreaturePosture::CROUCHED) {
-				defender->setPosture(CreaturePosture::UPRIGHT);
+				defender->setPosture(CreaturePosture::UPRIGHT, false, false);
 				defender->sendSystemMessage("@cbt_spam:force_posture_change_0");
 				defender->sendStateCombatSpam("cbt_spam", "force_posture_change_0", 0, 0, false);
 			}
@@ -551,7 +562,7 @@ public:
 		case CommandEffect::POSTUREDOWN:
 			if (!defender->checkPostureDownRecovery()) {
 				if (defender->getPosture() != CreaturePosture::UPRIGHT)
-					defender->setPosture(CreaturePosture::UPRIGHT);
+					defender->setPosture(CreaturePosture::UPRIGHT, false, false);
 				break;
 			}
 
@@ -561,11 +572,11 @@ public:
 			}
 
 			if (defender->getPosture() == CreaturePosture::UPRIGHT) {
-				defender->setPosture(CreaturePosture::CROUCHED);
+				defender->setPosture(CreaturePosture::CROUCHED, false, false);
 				defender->sendSystemMessage("@cbt_spam:force_posture_change_1");
 				defender->sendStateCombatSpam("cbt_spam", "force_posture_change_1", 0, 0, false);
 			} else if (defender->getPosture() == CreaturePosture::CROUCHED) {
-				defender->setPosture(CreaturePosture::PRONE);
+				defender->setPosture(CreaturePosture::PRONE, false, false);
 				defender->sendSystemMessage("@cbt_spam:force_posture_change_2");
 				defender->sendStateCombatSpam("cbt_spam", "force_posture_change_2", 0, 0, false);
 			}
@@ -604,13 +615,13 @@ public:
 			}
 			break;
 		case CommandEffect::ATTACKER_FORCE_STAND:
-			attacker->setPosture(CreaturePosture::UPRIGHT, false);
+			attacker->setPosture(CreaturePosture::UPRIGHT, false, false);
 			break;
 		case CommandEffect::ATTACKER_FORCE_CROUCH:
-			attacker->setPosture(CreaturePosture::CROUCHED, false);
+			attacker->setPosture(CreaturePosture::CROUCHED, false, false);
 			break;
 		case CommandEffect::ATTACKER_FORCE_PRONE:
-			attacker->setPosture(CreaturePosture::PRONE, false);
+			attacker->setPosture(CreaturePosture::PRONE, false, false);
 			break;
 		default:
 			break;

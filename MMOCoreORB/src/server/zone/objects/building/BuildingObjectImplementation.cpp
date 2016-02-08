@@ -49,6 +49,7 @@
 #include "server/zone/objects/creature/ai/AiAgent.h"
 
 #include "server/zone/managers/planet/MapLocationType.h"
+#include "server/zone/objects/building/components/GCWBaseContainerComponent.h"
 
 void BuildingObjectImplementation::initializeTransientMembers() {
 	StructureObjectImplementation::initializeTransientMembers();
@@ -369,8 +370,9 @@ bool BuildingObjectImplementation::isCityBanned(CreatureObject* player){
 
 
 bool BuildingObjectImplementation::isAllowedEntry(CreatureObject* player) {
+	GCWBaseContainerComponent* conComp = containerComponent.castTo<GCWBaseContainerComponent*>();
 
-	if(isGCWBase()) {
+	if (conComp != NULL) {
 		if (factionBaseType == GCWManager::STATICFACTIONBASE)
 			return true;
 
@@ -846,10 +848,6 @@ uint32 BuildingObjectImplementation::getMaximumNumberOfPlayerItems() {
 		return MAXPLAYERITEMS;
 
 	return MIN(MAXPLAYERITEMS, lots * 100);
-}
-
-bool BuildingObjectImplementation::transferObject(SceneObject* object, int containmentType, bool notifyClient, bool allowOverflow) {
-	return StructureObjectImplementation::transferObject(object, containmentType, notifyClient, allowOverflow);
 }
 
 int BuildingObjectImplementation::notifyObjectInsertedToChild(SceneObject* object, SceneObject* child, SceneObject* oldParent) {
