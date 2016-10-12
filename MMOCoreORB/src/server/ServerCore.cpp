@@ -5,28 +5,26 @@
 #include "ServerCore.h"
 
 #include "db/ServerDatabase.h"
-
 #include "db/MantisDatabase.h"
 
 #include "server/chat/ChatManager.h"
-
 #include "server/login/LoginServer.h"
-
 #include "features/Features.h"
-
 #include "ping/PingServer.h"
-
 #include "status/StatusServer.h"
-
 #include "web/WebServer.h"
-
 #include "server/zone/ZoneServer.h"
 
 #include "server/zone/managers/object/ObjectManager.h"
-#include "server/zone/managers/templates/TemplateManager.h"
+#include "templates/manager/TemplateManager.h"
 #include "server/zone/managers/player/PlayerManager.h"
+#include "server/zone/managers/director/DirectorManager.h"
 
 #include "server/zone/objects/creature/CreatureObject.h"
+
+#include "engine/util/u3d/QuadTree.h"
+
+#include "engine/orb/db/CommitMasterTransactionThread.h"
 
 ManagedReference<ZoneServer*> ServerCore::zoneServerRef = NULL;
 SortedVector<String> ServerCore::arguments;
@@ -53,6 +51,8 @@ ServerCore::ServerCore(bool truncateDatabases, SortedVector<String>& args) :
 	configManager = ConfigManager::instance();
 
 	features = NULL;
+
+	handleCmds = true;
 }
 
 class ZoneStatisticsTask: public Task {
@@ -91,7 +91,7 @@ void ServerCore::initialize() {
 		String& orbaddr = configManager->getORBNamingDirectoryAddress();
 		orb = DistributedObjectBroker::initialize(orbaddr,
 //				DistributedObjectBroker::NAMING_DIRECTORY_PORT);
-				44419);
+				configManager->getORBNamingDirectoryPort());
 
 		orb->setCustomObjectManager(objectManager);
 
@@ -162,7 +162,7 @@ void ServerCore::initialize() {
 			int statusAllowedConnections =
 					configManager->getStatusAllowedConnections();
 
-			statusServer->start(statusPort);
+			statusServer->start(statusPort, statusAllowedConnections);
 		}
 
 		if (webServer != NULL) {
@@ -194,12 +194,16 @@ void ServerCore::initialize() {
 
 		info("initialized", true);
 		
-		if(arguments.contains("playercleanup") && zoneServer != NULL){
+		if (arguments.contains("playercleanup") && zoneServer != NULL) {
 			zoneServer->getPlayerManager()->cleanupCharacters();
 		}
 
-		if(arguments.contains("playercleanupstats") && zoneServer != NULL){
+		if (arguments.contains("playercleanupstats") && zoneServer != NULL) {
 			zoneServer->getPlayerManager()->getCleanupCharacterCount();
+		}
+
+		if (arguments.contains("shutdown")) {
+			handleCmds = false;
 		}
 		
 	} catch (ServiceException& e) {
@@ -218,52 +222,79 @@ void ServerCore::run() {
 }
 
 void ServerCore::shutdown() {
-	info("shutting down server..");
+	info("shutting down server..", true);
 
-	ObjectManager::instance()->cancelUpdateModifiedObjectsTask();
-	ObjectDatabaseManager::instance()->checkpoint();
+	ObjectManager* objectManager = ObjectManager::instance();
 
-	info("database checkpoint done", true);
-
-	if (statusServer != NULL) {
-		statusServer->stop();
-
-		//delete statusServer;
-		statusServer = NULL;
-	}
-
-	if (webServer != NULL) {
-		webServer->stop();
-
-		webServer = NULL;
-	}
+	objectManager->cancelDeleteCharactersTask();
+	objectManager->cancelUpdateModifiedObjectsTask();
 
 	ZoneServer* zoneServer = zoneServerRef.get();
 
 	if (zoneServer != NULL) {
-		zoneServer->stop();
-		//zoneServer->finalize();
+		zoneServer->setServerStateShuttingDown();
 
-		zoneServer = NULL;
+		Thread::sleep(2000);
+
+		PlayerManager* playerManager = zoneServer->getPlayerManager();
+
+		playerManager->disconnectAllPlayers();
 	}
 
 	if (loginServer != NULL) {
 		loginServer->stop();
-
-		//loginServer = NULL;
+		loginServer = NULL;
 	}
 
 	if (pingServer != NULL) {
 		pingServer->stop();
-
-		//delete pingServer;
+		delete pingServer;
 		pingServer = NULL;
 	}
 
-	if (features != NULL) {
-		delete features;
-		features = NULL;
+	if (webServer != NULL) {
+		webServer->stop();
+		webServer = NULL;
 	}
+
+	if (statusServer != NULL) {
+		statusServer->stop();
+		delete statusServer;
+		statusServer = NULL;
+	}
+
+	Thread::sleep(5000);
+
+	objectManager->createBackup();
+
+	while (objectManager->isObjectUpdateInProcess())
+		Thread::sleep(500);
+
+	info("database backup done", true);
+
+	objectManager->cancelUpdateModifiedObjectsTask();
+
+	if (zoneServer != NULL) {
+		zoneServer->clearZones();
+	}
+
+	orb->shutdown();
+
+	Core::getTaskManager()->shutdown();
+
+	if (zoneServer != NULL) {
+		zoneServer->stop();
+		zoneServer = NULL;
+	}
+
+	DistributedObjectDirectory* dir = objectManager->getLocalObjectDirectory();
+
+	HashTable<uint64, Reference<DistributedObject*> > tbl;
+	tbl.copyFrom(dir->getDistributedObjectMap());
+
+	objectManager->finalizeInstance();
+
+	configManager = NULL;
 
 	if (database != NULL) {
 		delete database;
@@ -275,15 +306,27 @@ void ServerCore::shutdown() {
 		mantisDatabase = NULL;
 	}
 
-	//zoneServerRef = NULL;
+	if (features != NULL) {
+		delete features;
+		features = NULL;
+	}
 
-	info("server closed");
+	mysql_thread_end();
+	engine::db::mysql::MySqlDatabase::finalizeLibrary();
 
-	//exit(1);
+	NetworkInterface::finalize();
+
+	Logger::closeGlobalFileLogger();
+
+	orb->finalizeInstance();
+
+	zoneServerRef = NULL;
+
+	info("server closed", true);
 }
 
 void ServerCore::handleCommands() {
-	while (true) {
+	while (handleCmds) {
 
 #ifdef WITH_STM
 		Reference<Transaction*> transaction = TransactionalMemoryManager::instance()->startTransaction();
@@ -354,19 +397,12 @@ void ServerCore::handleCommands() {
 			} else if (command == "fixQueue") {
 				if (zoneServer != NULL)
 					zoneServer->fixScheduler();
-			} else if (command == "crash") {
-				zoneServer = NULL;
-
-				zoneServer->fixScheduler();
 			} else if (command == "save") {
 				ObjectManager::instance()->createBackup();
 				//ObjectDatabaseManager::instance()->checkpoint();
 			} else if (command == "help") {
 				System::out << "available commands:\n";
-				System::out
-						<< "\texit, logQuadTree, info, icap, dcap, fixQueue, crash, about.\n";
-			} else if (command == "about") {
-				System::out << "Core3 Uber Edition. Ultyma pwns you.\n";
+				System::out << "\texit, logQuadTree, info, lock, unlock, icap, dcap, fixQueue, save, chars, lookupcrc, rev, broadcast, shutdown.\n";
 			} else if (command == "chars") {
 				uint32 num = 0;
 
@@ -440,8 +476,20 @@ void ServerCore::handleCommands() {
 						server->getPlayerManager()->getCleanupCharacterCount();
 				}
 
-			} else
+			} else if ( command == "test" ) {
+				// get lua
+				Lua* lua = DirectorManager::instance()->getLuaInstance();
+
+				// create the lua function
+				Reference<LuaFunction*> func = lua->createFunction("Tests", arguments, 0);
+				func->callFunction();
+			} else if ( command == "reloadscreenplays" ) {
+				DirectorManager::instance()->reloadScreenPlays();
+			} else if ( command == "clearstats" ) {
+				Core::getTaskManager()->clearWorkersTaskStats();
+			} else {
 				System::out << "unknown command (" << command << ")\n";
+			}
 		} catch (SocketException& e) {
 			System::out << "[ServerCore] " << e.getMessage();
 		} catch (ArrayIndexOutOfBoundsException& e) {
@@ -458,6 +506,8 @@ void ServerCore::handleCommands() {
 #endif
 
 	}
+
+	Thread::sleep(10000);
 }
 
 void ServerCore::processConfig() {

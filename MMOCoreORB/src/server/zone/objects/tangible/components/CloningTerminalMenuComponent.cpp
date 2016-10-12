@@ -14,7 +14,6 @@
 #include "server/zone/objects/scene/SceneObject.h"
 #include "server/zone/objects/scene/SceneObjectType.h"
 #include "server/zone/objects/tangible/TangibleObject.h"
-#include "server/zone/managers/player/PlayerManager.h"
 #include "server/zone/objects/building/BuildingObject.h"
 #include "server/zone/objects/player/sui/SuiCallback.h"
 #include "server/zone/objects/player/sui/callbacks/CloningStoreSuiCallback.h"
@@ -22,12 +21,12 @@
 #include "server/zone/Zone.h"
 #include "server/zone/ZoneServer.h"
 
-void CloningTerminalMenuComponent::fillObjectMenuResponse(SceneObject* sceneObject, ObjectMenuResponse* menuResponse, CreatureObject* player) {
+void CloningTerminalMenuComponent::fillObjectMenuResponse(SceneObject* sceneObject, ObjectMenuResponse* menuResponse, CreatureObject* player) const {
 
 	TangibleObjectMenuComponent::fillObjectMenuResponse(sceneObject, menuResponse, player);
 }
 
-int CloningTerminalMenuComponent::handleObjectMenuSelect(SceneObject* sceneObject, CreatureObject* player, byte selectedID) {
+int CloningTerminalMenuComponent::handleObjectMenuSelect(SceneObject* sceneObject, CreatureObject* player, byte selectedID) const {
 	if (!sceneObject->isTangibleObject())
 		return 0;
 

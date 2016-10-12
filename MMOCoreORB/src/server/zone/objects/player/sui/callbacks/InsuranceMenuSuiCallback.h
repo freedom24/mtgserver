@@ -10,8 +10,9 @@
 
 #include "server/zone/objects/player/sui/SuiCallback.h"
 #include "server/zone/objects/player/sui/messagebox/SuiMessageBox.h"
+#include "server/zone/objects/player/sui/listbox/SuiListBox.h"
 #include "server/zone/objects/player/sui/callbacks/InsuranceAllConfirmSuiCallback.h"
-#include "server/zone/objects/tangible/OptionBitmask.h"
+#include "templates/params/OptionBitmask.h"
 
 class InsuranceMenuSuiCallback : public SuiCallback {
 public:

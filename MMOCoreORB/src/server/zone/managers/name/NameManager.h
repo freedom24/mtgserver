@@ -10,7 +10,6 @@
 #include "engine/core/ManagedReference.h"
 #include "server/zone/managers/name/NameData.h"
 #include "server/zone/managers/name/NameUnique.h"
-#include "server/zone/managers/templates/TemplateManager.h"
 
 namespace server {
 	namespace zone {
@@ -158,6 +157,7 @@ public:
 	int validateGuildName(const String& name, int type = NameManagerType::GUILD_NAME);
 	int validateCityName(const String& name);
 	int validateVendorName(const String& name);
+	int validateChatRoomName(const String& name);
 
 	const String makeCreatureName(int type = 1, int species = 0);
 

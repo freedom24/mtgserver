@@ -43,20 +43,15 @@ public:
 			for (int i = 0; i < inventory->getContainerObjectsSize(); ++i) {
 				SceneObject* item = inventory->getContainerObject(i);
 
-				if (!item->isTangibleObject())
+				if (!item->isPharmaceuticalObject())
 					continue;
 
-				TangibleObject* tano = cast<TangibleObject*>( item);
+				PharmaceuticalObject* pharma = cast<PharmaceuticalObject*>(item);
 
-				if (tano->isPharmaceuticalObject()) {
-					PharmaceuticalObject* pharma = cast<PharmaceuticalObject*>( tano);
+				if (pharma->isDroidRepairKit()) {
+					StimPack* stimPack = cast<StimPack*>(pharma);
 
-					if (pharma->isDroidRepairKit()) {
-						StimPack* stimPack = cast<StimPack*>( pharma);
-
-						return stimPack;
-					}
-
+					return stimPack;
 				}
 			}
 		}
@@ -71,7 +66,7 @@ public:
 		}
 
 		if (stimPack == NULL) {
-			creature->sendSystemMessage("No valid droid repair kit found.");
+			creature->sendSystemMessage("@error_message:droid_repair_no_damage_kit"); //No valid droid damage repair kit was found in your inventory.
 			return false;
 		}
 
@@ -81,14 +76,22 @@ public:
 		}
 
 		if (!droid->isHealableBy(creature)) {
-			creature->sendSystemMessage("@healing:pvp_no_help"); //It would be unwise to help such a patient.
+			creature->sendSystemMessage("@error_message:droid_repair_opposite_faction"); //It would be unwise to repair a droid such as this.
 			return false;
 		}
 
-		if (!droid->hasDamage(CreatureAttribute::HEALTH) && !droid->hasDamage(CreatureAttribute::ACTION) && !droid->hasDamage(CreatureAttribute::MIND)) {
-			StringBuffer message;
-			message << droid->getDisplayedName() << " has no damage to heal.";
-			creature->sendSystemMessage(message.toString());
+		Vector<byte> atts = stimPack->getAttributes();
+		bool needsHeals = false;
+
+		for (int i = 0; i < atts.size(); i++) {
+			if (droid->hasDamage(atts.get(i)))
+				needsHeals = true;
+		}
+
+		if (!needsHeals) {
+			StringIdChatParameter stringId("error_message", "droid_repair_no_damage"); // It appears %TO has no damage to repair.
+			stringId.setTO(droid->getObjectID());
+			creature->sendSystemMessage(stringId);
 			return false;
 		}
 
@@ -105,7 +108,7 @@ public:
 			return;
 
 		StringIdChatParameter stringId("healing", "droid_repair_damage_self"); // You have repaired %TO and healed a total of %DI point of damage.
-		stringId.setTO(droid);
+		stringId.setTO(droid->getObjectID());
 		stringId.setDI(healthDamage + actionDamage + mindDamage);
 		creature->sendSystemMessage(stringId);
 
@@ -113,7 +116,7 @@ public:
 
 		if (droidOwner != NULL && droidOwner != creature) {
 			StringIdChatParameter stringId("healing", "droid_repair_damage_other"); // %TT has repaired %TO and healed a total of %DI point of damage.
-			stringId.setTT(creature);
+			stringId.setTT(creature->getObjectID());
 			stringId.setDI(healthDamage + actionDamage + mindDamage);
 			droidOwner->sendSystemMessage(stringId);
 		}
@@ -128,8 +131,11 @@ public:
 
 		ManagedReference<SceneObject*> object = server->getZoneServer()->getObject(target);
 
-		if (object == NULL || !object->isDroidObject()) {
-			creature->sendSystemMessage("Invalid Target.");
+		if (object == NULL) {
+			creature->sendSystemMessage("@error_message:droid_repair_no_target"); //You must target a droid pet to use these tools.
+			return GENERALERROR;
+		} else if (!object->isDroidObject()) {
+			creature->sendSystemMessage("@error_message:droid_repair_target_not_droid"); //Your target is not able to be repaired with these tools.
 			return GENERALERROR;
 		}
 
@@ -137,12 +143,10 @@ public:
 
 		Locker clocker(droid, creature);
 
-		if (!droid->isPet() || droid->isDead() || droid->isAttackableBy(creature)) {
-			creature->sendSystemMessage("Invalid Target.");
-			return GENERALERROR;
-		}
+		if (!droid->isPet() || droid->isDead() || droid->isAttackableBy(creature))
+			return INVALIDTARGET;
 
-		if (!creature->isInRange(droid, range + droid->getTemplateRadius() + creature->getTemplateRadius()))
+		if(!checkDistance(creature, droid, range))
 			return TOOFAR;
 
 		uint64 objectID = 0;
@@ -174,9 +178,32 @@ public:
 		uint32 stimPower = 0;
 		stimPower = stimPack->calculatePower(creature, droid, false);
 
-		int healthHealed = droid->healDamage(creature, CreatureAttribute::HEALTH, stimPower);
-		int actionHealed = droid->healDamage(creature, CreatureAttribute::ACTION, stimPower, true, false);
-		int mindHealed = droid->healDamage(creature, CreatureAttribute::MIND, stimPower, true, false);
+		Vector<byte> atts = stimPack->getAttributes();
+		int healthHealed = 0, actionHealed = 0, mindHealed = 0;
+		bool notifyObservers = true;
+
+
+		if (atts.contains(CreatureAttribute::HEALTH)) {
+			healthHealed = droid->healDamage(creature, CreatureAttribute::HEALTH, stimPower);
+			notifyObservers = false;
+		}
+
+		if (atts.contains(CreatureAttribute::ACTION)) {
+			if (notifyObservers) {
+				actionHealed = droid->healDamage(creature, CreatureAttribute::ACTION, stimPower);
+				notifyObservers = false;
+			} else {
+				actionHealed = droid->healDamage(creature, CreatureAttribute::ACTION, stimPower, true, false);
+			}
+		}
+
+		if (atts.contains(CreatureAttribute::MIND)) {
+			if (notifyObservers) {
+				mindHealed = droid->healDamage(creature, CreatureAttribute::MIND, stimPower);
+			} else {
+				mindHealed = droid->healDamage(creature, CreatureAttribute::MIND, stimPower, true, false);
+			}
+		}
 
 		sendHealMessage(creature, droid, healthHealed, actionHealed, mindHealed);
 

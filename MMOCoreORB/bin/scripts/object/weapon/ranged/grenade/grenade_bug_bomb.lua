@@ -42,7 +42,7 @@
 
 
 object_weapon_ranged_grenade_grenade_bug_bomb = object_weapon_ranged_grenade_shared_grenade_bug_bomb:new {
-	objectMenuComponent = {"cpp", "ThrowGrenadeMenuComponent"},
+	objectMenuComponent = "ThrowGrenadeMenuComponent",
 
 	playerRaces = { "object/creature/player/bothan_male.iff",
 			"object/creature/player/bothan_female.iff",
@@ -112,6 +112,7 @@ object_weapon_ranged_grenade_grenade_bug_bomb = object_weapon_ranged_grenade_sha
 
 	maxRange = 32,
 	maxRangeAccuracy = -30,
+	animationType = "bug_bomb",
 
 	minDamage = 470,
 	maxDamage = 580,

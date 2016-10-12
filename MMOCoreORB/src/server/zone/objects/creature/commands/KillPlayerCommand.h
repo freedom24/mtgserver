@@ -158,7 +158,9 @@ public:
 			Zone* zone = creature->getZone();
 
 			if (creature->getCloseObjects() == NULL) {
+#ifdef COV_DEBUG
 				creature->info("Null closeobjects vector in KillPlayerCommand::doQueueCommand", true);
+#endif
 				zone->getInRangeObjects(creature->getPositionX(), creature->getPositionY(), range, &closeObjects, true);
 			}
 			else {
@@ -171,7 +173,7 @@ public:
 			//Deal area damage if specified
 			if (damage) {
 				for (int i = 0; i < closeObjects.size(); i++) {
-					SceneObject* targetObject = cast<SceneObject*>(closeObjects.get(i));
+					SceneObject* targetObject = static_cast<SceneObject*>(closeObjects.get(i));
 					if (targetObject->isPlayerCreature() || targetObject->isPet()) {
 						targetPlayer = cast<CreatureObject*>(targetObject);
 
@@ -208,7 +210,7 @@ public:
 			//Kill players in area
 			else {
 				for (int i = 0; i < closeObjects.size(); i++) {
-					SceneObject* targetObject = cast<SceneObject*>(closeObjects.get(i));
+					SceneObject* targetObject = static_cast<SceneObject*>(closeObjects.get(i));
 					if (targetObject->isPlayerCreature() || targetObject->isPet()) {
 						targetPlayer = cast<CreatureObject*>(targetObject);
 

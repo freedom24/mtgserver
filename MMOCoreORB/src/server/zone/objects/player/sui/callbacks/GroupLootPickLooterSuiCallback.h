@@ -9,6 +9,7 @@
 #define GROUPLOOTPICKLOOTERSUICALLBACK_H_
 
 #include "server/zone/objects/player/sui/SuiCallback.h"
+#include "server/zone/objects/player/sui/listbox/SuiListBox.h"
 
 
 class GroupLootPickLooterSuiCallback : public SuiCallback {
@@ -48,19 +49,16 @@ public:
 			return;
 
 		//Validate the player we're trying to make ML exists and is in the group.
-		ManagedReference<SceneObject*> object = player->getZoneServer()->getObject(newMasterLooterID);
+		ManagedReference<CreatureObject*> object = player->getZoneServer()->getObject(newMasterLooterID).castTo<CreatureObject*>();
 		if (object == NULL || !object->isPlayerCreature() || !group->hasMember(object))
 			return;
 
 		//Change the Master Looter.
-		CreatureObject* newLooter = cast<CreatureObject*>(object.get());
-		GroupManager::instance()->changeMasterLooter(group, newLooter, true);
+		GroupManager::instance()->changeMasterLooter(group, object, true);
 
 	}
 
 };
-
-
 
 
 #endif /* GROUPLOOTPICKLOOTERSUICALLBACK_H_ */

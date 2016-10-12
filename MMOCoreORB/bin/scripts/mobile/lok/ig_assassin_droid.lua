@@ -22,7 +22,7 @@ ig_assassin_droid = Creature:new {
 	ferocity = 0,
 	pvpBitmask = ATTACKABLE,
 	creatureBitmask = KILLER + STALKER,
-	optionsBitmask = 0,
+	optionsBitmask = AIENABLED,
 	diet = NONE,
 
 	templates = {"object/mobile/ig_assassin_droid.iff"},
@@ -39,7 +39,7 @@ ig_assassin_droid = Creature:new {
 	},
 	conversationTemplate = "",
 	defaultWeapon = "object/weapon/ranged/droid/droid_droideka_ranged.iff",
-	defaultAttack = "creaturerangedattack"
+	defaultAttack = "attack"
 }
 
 CreatureTemplates:addCreatureTemplate(ig_assassin_droid, "ig_assassin_droid")

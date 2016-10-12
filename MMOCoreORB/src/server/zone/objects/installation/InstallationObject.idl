@@ -16,7 +16,7 @@ import server.zone.objects.creature.CreatureObject;
 import server.zone.packets.object.ObjectMenuResponse;
 import server.zone.packets.scene.AttributeListMessage;
 import server.zone.packets.object.ObjectMenuResponse;
-import server.zone.templates.SharedObjectTemplate;
+include templates.SharedObjectTemplate;
 import server.zone.objects.installation.SyncrhonizedUiListenInstallationTask;
 import server.zone.objects.resource.ResourceSpawn;
 import server.zone.objects.resource.ResourceContainer;
@@ -24,7 +24,6 @@ import server.zone.objects.area.ActiveArea;
 import system.lang.Time;
 import server.zone.objects.scene.SceneObject;
 import server.zone.objects.tangible.TangibleObject;
-include server.zone.objects.manufactureschematic.craftingvalues.CraftingValues;
 include server.zone.objects.installation.HopperList;
 
 include engine.util.u3d.QuadTreeEntry;
@@ -257,15 +256,14 @@ class InstallationObject extends StructureObject {
 
 	//public native void setCombatState();
 
-	@preLocked
-	public native void addDefender(SceneObject defender);
-
 	@dirty
 	public native boolean isAggressiveTo(CreatureObject object);
 
 	/**
-	* pre{ object is locked}
-	* post{this object is locked}
+	* Evaluates if this can be attacked by object
+	* @pre { }
+	* @post { }
+	* @return returns true if object can attack this
 	*/ 
 	@dirty
 	public native boolean isAttackableBy(CreatureObject object);

@@ -117,12 +117,19 @@ void QueueCommand::onFail(uint32 actioncntr, CreatureObject* creature, uint32 er
 		if (addToQueue)
 			creature->clearQueueAction(actioncntr, 0, 3, 0);
 		break;
-	case INVALIDWEAPON: // this only gets returned from combat commands
-		switch (creature->getWeapon()->getAttackType()) {
-		case WeaponObject::RANGEDATTACK:
+	case INVALIDWEAPON: { // this only gets returned from combat commands
+		ManagedReference<WeaponObject*> weapon = creature->getWeapon();
+		int attackType = -1;
+
+		if (weapon != NULL) {
+			attackType = weapon->getAttackType();
+		}
+
+		switch (attackType) {
+		case SharedWeaponObjectTemplate::RANGEDATTACK:
 			creature->sendSystemMessage("@cbt_spam:no_attack_ranged_single");
 			break;
-		case WeaponObject::MELEEATTACK:
+		case SharedWeaponObjectTemplate::MELEEATTACK:
 			creature->sendSystemMessage("@cbt_spam:no_attack_melee_single");
 			break;
 		default:
@@ -133,7 +140,7 @@ void QueueCommand::onFail(uint32 actioncntr, CreatureObject* creature, uint32 er
 		if (addToQueue)
 			creature->clearQueueAction(actioncntr);
 		break;
-
+	}
 	case TOOFAR:
 		if (addToQueue)
 			creature->clearQueueAction(actioncntr, 0, 4, 0);
@@ -172,6 +179,13 @@ void QueueCommand::onFail(uint32 actioncntr, CreatureObject* creature, uint32 er
 		break;
 	case TOOCLOSE:
 		prm.setStringId("combat_effects", "prone_ranged_too_close");
+		creature->sendSystemMessage(prm);
+
+		if (addToQueue)
+			creature->clearQueueAction(actioncntr);
+		break;
+	case INSUFFICIENTHAM:
+		prm.setStringId("cbt_spam", "pool_drain_fail_single");
 		creature->sendSystemMessage(prm);
 
 		if (addToQueue)

@@ -28,6 +28,8 @@ void PlantObjectImplementation::fillObjectMenuResponse(ObjectMenuResponse* menuR
 
 	if (fruitCount > 0)
 		menuResponse->addRadialMenuItem(74, 3, "@plant_grow:pick_fruit_menu");
+
+	menuResponse->addRadialMenuItem(75, 3, "DEBUG DATA");
 }
 
 int PlantObjectImplementation::handleObjectMenuSelect(CreatureObject* player, byte selectedID) {
@@ -93,6 +95,11 @@ int PlantObjectImplementation::handleObjectMenuSelect(CreatureObject* player, by
 		inventory->broadcastObject(fruit, true);
 		player->sendSystemMessage("@plant_grow:pick_fruit"); // You pick a piece of fruit from the plant.
 
+	} else if (selectedID == 75) { // DEBUG DATA
+		player->sendSystemMessage("Water level: " + String::valueOf(waterLevel) + ", Ideal water level: " + String::valueOf(idealWaterLevel) + ", water quality: " + String::valueOf(waterQuality));
+		player->sendSystemMessage("Nutrient level: " + String::valueOf(nutrientLevel) + ", Ideal nutrient level: " + String::valueOf(idealNutrientLevel) + ", nutrient quality: " + String::valueOf(nutrientQuality));
+		player->sendSystemMessage("Plant health: " + String::valueOf(health) + ", growth rate: " + String::valueOf(growthRate) + ", plant size: " + String::valueOf(plantSize));
+		player->sendSystemMessage("Critical attribute 1: " + String::valueOf(criticalAttribOne) + ", critical attribute 2: " + String::valueOf(criticalAttribTwo) + " ( see PlantObjectImplementation::getCriticalAttribute() )");
 	}
 
 	return 1;
@@ -141,6 +148,11 @@ void PlantObjectImplementation::fillAttributeList(AttributeListMessage* alm, Cre
 }
 
 void PlantObjectImplementation::sendResourceSUI(CreatureObject* player, int type) {
+	ManagedReference<PlayerObject*> ghost = player->getPlayerObject();
+
+	if (ghost == NULL)
+		return;
+
 	ManagedReference<SuiListBox*> suiBox = new SuiListBox(player, SuiWindowType::GROWABLE_PLANT, SuiListBox::HANDLETWOBUTTON);
 	suiBox->setCallback(new GrowablePlantSuiCallback(player->getZoneServer()));
 	suiBox->setPromptTitle("@plant_grow:select_resource_sub");
@@ -152,11 +164,6 @@ void PlantObjectImplementation::sendResourceSUI(CreatureObject* player, int type
 
 	ManagedReference<SceneObject*> inventory = player->getSlottedObject("inventory");
 	ManagedReference<SceneObject*> sceneObject = NULL;
-
-	ManagedReference<PlayerObject*> ghost = player->getPlayerObject();
-
-	if (ghost == NULL)
-		return;
 
 	for (int i=0; i< inventory->getContainerObjectsSize(); i++) {
 		sceneObject = inventory->getContainerObject(i);
@@ -183,7 +190,7 @@ void PlantObjectImplementation::sendResourceSUI(CreatureObject* player, int type
 
 	if (suiBox->getMenuSize() > 0) {
 		ghost->closeSuiWindowType(SuiWindowType::GROWABLE_PLANT);
-		player->getPlayerObject()->addSuiBox(suiBox);
+		ghost->addSuiBox(suiBox);
 		player->sendMessage(suiBox->generateMessage());
 	} else {
 		if (type == 1)
@@ -195,6 +202,8 @@ void PlantObjectImplementation::sendResourceSUI(CreatureObject* player, int type
 
 void PlantObjectImplementation::initializePlant(int size) {
 	lastPulse.updateToCurrentTime();
+
+	plantSize = size;
 
 	if (size == 1) {
 		idealWaterLevel = 30 + System::random(40);

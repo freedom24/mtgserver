@@ -116,17 +116,17 @@ void ManufactureSchematicImplementation::setDraftSchematic(DraftSchematic* schem
 	draftSchematic = schematic;
 }
 
-void ManufactureSchematicImplementation::synchronizedUIListen(SceneObject* player, int value) {
+void ManufactureSchematicImplementation::synchronizedUIListen(CreatureObject* player, int value) {
 
-	if(!player->isPlayerCreature() || draftSchematic == NULL)
+	if (!player->isPlayerCreature() || draftSchematic == NULL)
 		return;
 
 	Reference<CraftingSession*> session = player->getActiveSession(SessionFacadeType::CRAFTING).castTo<CraftingSession*>();
-	if(session == NULL || session->getSchematic() != _this.getReferenceUnsafeStaticCast()) {
+	if (session == NULL || session->getSchematic() != _this.getReferenceUnsafeStaticCast()) {
 		return;
 	}
 
-	if(!initialized)
+	if (!initialized)
 		initializeIngredientSlots();
 
 	possibleSyncIssue = false;
@@ -138,7 +138,7 @@ void ManufactureSchematicImplementation::synchronizedUIListen(SceneObject* playe
 	session->sendIngredientForUIListen();
 }
 
-void ManufactureSchematicImplementation::sendMsco7(SceneObject* player) {
+void ManufactureSchematicImplementation::sendMsco7(CreatureObject* player) {
 
 	ManufactureSchematicObjectMessage7* mcso7 = new ManufactureSchematicObjectMessage7(_this.getReferenceUnsafeStaticCast());
 
@@ -255,7 +255,7 @@ void ManufactureSchematicImplementation::sendMsco7(SceneObject* player) {
 	player->sendMessage(mcso7);
 }
 
-void ManufactureSchematicImplementation::synchronizedUIStopListen(SceneObject* player, int value) {
+void ManufactureSchematicImplementation::synchronizedUIStopListen(CreatureObject* player, int value) {
 
 }
 
@@ -287,8 +287,8 @@ void ManufactureSchematicImplementation::initializeIngredientSlots() {
 
 		Reference<IngredientSlot* > ingredientSlot = NULL;
 		Reference<DraftSlot* > draftSlot = draftSchematic->getDraftSlot(i);
-
-		ingredientNames.add(StringId(draftSlot->getStringId()));
+		
+		ingredientNames.add(StringId(draftSlot->getStringIdFile(), draftSlot->getStringIdName()));
 		ingredientTypes.add(0);
 		slotOIDs.add(Vector<uint64>());
 		slotQuantities.add(Vector<int>());
@@ -329,7 +329,7 @@ void ManufactureSchematicImplementation::initializeIngredientSlots() {
 
 		ingredientSlot->setContentType(draftSlot->getResourceType());
 		ingredientSlot->setQuantityNeeded(draftSlot->getQuantity());
-		ingredientSlot->setSlotName(draftSlot->getStringId().getStringID());
+		ingredientSlot->setSlotName(draftSlot->getStringIdName());
 
 		ingredientSlots.add(ingredientSlot.get());
 	}
@@ -490,40 +490,39 @@ void ManufactureSchematicImplementation::cleanupIngredientSlots(CreatureObject* 
 
 bool ManufactureSchematicImplementation::isReadyForAssembly() {
 
-	if(ingredientSlots.isEmpty() || !initialized)
+	if (ingredientSlots.isEmpty() || !initialized)
 		return false;
+
 	// store off all component objects we find
 	int componetSlotItemCount = 0;
 	HashSet<uint64> usedObjectIds;
-	bool usingIdentical = false;
+
 	for (int i = 0; i < ingredientSlots.size(); ++i) {
 
 		Reference<IngredientSlot* > slot = ingredientSlots.get(i);
 
-		// null slots should happen unless something bad happened
-		if(slot == NULL)
+		// null slots shouldn't happen unless something bad happened
+		if (slot == NULL)
 			return false;
 
-		if(slot->isOptional()) // Skip before adding as it can be blank
+		if (slot->isOptional()) // Skip as it can be blank
 			continue;
 
-		if(!slot->isFull())
+		if (!slot->isFull())
 			return false;
 
 		if (slot->isComponentSlot()) {
 			Vector<uint64> v = slot->getOIDVector();
 			componetSlotItemCount += slot->getSlotQuantity();
-			for (int i=0;i<v.size();i++) {
+			for (int i = 0; i < v.size(); i++) {
 				usedObjectIds.add(v.get(i));
 			}
 		}
-		// If we are using idenitcal slots, we may have duplicate objectid i.e. factory crate
-		if(slot->requiresIdentical())
-			usingIdentical = true;
 	}
+
 	if (componetSlotItemCount != usedObjectIds.size())
-		if(!usingIdentical)
-			return false;
+		return false;
+
 	return true;
 }
 

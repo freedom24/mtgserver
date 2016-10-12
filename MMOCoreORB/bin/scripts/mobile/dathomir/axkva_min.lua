@@ -6,7 +6,7 @@ axkva_min = Creature:new {
 	chanceHit = 30,
 	damageMin = 1645,
 	damageMax = 3000,
-	specialDamageMult = 10,
+	specialDamageMult = 7.5,
 	baseXp = 28549,
 	baseHAM = 385000,
 	baseHAMmax = 471000,
@@ -23,7 +23,7 @@ axkva_min = Creature:new {
 	ferocity = 0,
 	pvpBitmask = AGGRESSIVE + ATTACKABLE + ENEMY,
 	creatureBitmask = PACK + KILLER + HEALER,
-	optionsBitmask = 128,
+	optionsBitmask = AIENABLED,
 	diet = HERBIVORE,
 
 	templates = {"object/mobile/dressed_dathomir_nightsister_axkva.iff"},

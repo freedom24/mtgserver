@@ -12,7 +12,7 @@ import server.zone.managers.objectcontroller.ObjectController;
 import server.zone.objects.group.GroupObject;
 import server.zone.ZoneProcessServer;
 import server.zone.managers.object.ObjectManager;
-import server.zone.packets.MessageCallback;
+include server.zone.packets.charcreation.ClientCreateCharacterCallback;
 import server.zone.objects.tangible.TangibleObject;
 import engine.core.ManagedObject;
 import server.zone.ZoneServer;
@@ -116,10 +116,10 @@ class PlayerManager extends Observer implements Logger {
 	public native boolean kickUser(final string name, final string admin, string reason, boolean doBan = true);
 
 	@local
-	public native boolean createPlayer(MessageCallback callback);
+	public native boolean createPlayer(ClientCreateCharacterCallback callback);
 
 	@local
-	public native boolean checkPlayerName(MessageCallback callback);
+	public native boolean checkPlayerName(ClientCreateCharacterCallback callback);
 
 	public native int notifyObserverEvent(unsigned int eventType, Observable observable, ManagedObject arg1, long arg2);
 
@@ -255,6 +255,7 @@ class PlayerManager extends Observer implements Logger {
 	 * @pre player locked
 	 * @post player locked
 	 */
+	@arg1preLocked
 	public native void grantDivorce(CreatureObject player);	
 
 	/**
@@ -362,10 +363,6 @@ class PlayerManager extends Observer implements Logger {
 
 	public native void finishHologrind(CreatureObject player);
 
-	public native Account getAccount(final string username);	
-	public native Account getAccount(unsigned int accountID);
-	private native Account queryForAccount(final string query);
-
 	public native string banAccount(PlayerObject admin, Account account, unsigned int seconds, final string reason);	
 	public native string unbanAccount(PlayerObject admin, Account account, final string reason);	
 	public native string banFromGalaxy(PlayerObject admin, Account account, final unsigned int galaxy, unsigned int seconds, final string reason);	
@@ -379,6 +376,7 @@ class PlayerManager extends Observer implements Logger {
 	public native void decreaseOnlineCharCount(ZoneClientSession client);
 	public native boolean increaseOnlineCharCountIfPossible(ZoneClientSession client);
 	//public native int getOnlineCharCount(unsigned int accountId);
+	public native void disconnectAllPlayers();
 
 	public native void fixHAM(CreatureObject player);
 	public native void fixBuffSkillMods(CreatureObject player);
@@ -484,4 +482,8 @@ class PlayerManager extends Observer implements Logger {
 	public int getNumJukeboxSongs(){
 		return jukeboxSongs.size();
 	}
+
+	@local
+	@arg1preLocked
+	public native void doPvpDeathRatingUpdate(CreatureObject player, ThreatMap threatMap);
 }

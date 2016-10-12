@@ -20,7 +20,6 @@ import server.zone.objects.scene.SceneObject;
 import server.zone.objects.area.ActiveArea;
 import server.zone.managers.planet.PlanetManager;
 import server.zone.managers.creature.CreatureManager;
-import server.zone.managers.objectcontroller.ObjectController;
 import server.zone.managers.gcw.GCWManager;
 import system.util.VectorMap;
 import system.util.SortedVector;
@@ -54,7 +53,7 @@ class Zone extends SceneObject {
 
 	private transient CreatureManager creatureManager;
 
-	private ChatRoom chatRoom;
+	private transient ChatRoom planetChatRoom;
 
 	@dereferenced
 	private transient SortedVector<CityRegion> cityRegionUpdateVector;
@@ -72,11 +71,12 @@ class Zone extends SceneObject {
 
 	@transactional
 	private transient MapLocationTable mapLocations;
-	
+
 	@dereferenced
 	protected AtomicInteger spawnedAiAgents;
 
 	private transient boolean managersStarted;
+	private transient boolean zoneCleared;
 
 	public native Zone(ZoneProcessServer processor, final string zoneName);
 	public native void initializeTransientMembers();
@@ -86,7 +86,7 @@ class Zone extends SceneObject {
 	public native SceneObject getNearestPlanetaryObject(SceneObject object, final string mapObjectLocationType);
 
 	public native void initializePrivateData();
-	
+
 	@local
 	public QuadTree getRegionTree() {
 		return regionTree.get();
@@ -94,7 +94,7 @@ class Zone extends SceneObject {
 
 	@local
 	public native int getInRangeObjects(float x, float y, float range, SortedVector<QuadTreeEntry> objects, boolean readLockZone);
-	
+
 	@local
 	public native int getInRangeObjects(float x, float y, float range, InRangeObjectsVector objects, boolean readLockZone);
 
@@ -132,6 +132,8 @@ class Zone extends SceneObject {
 	public native void startManagers();
 
 	public native void stopManagers();
+
+	public native void clearZone();
 
 	@dirty
 	@mock
@@ -180,7 +182,11 @@ class Zone extends SceneObject {
 	public boolean hasManagersStarted() {
 		return managersStarted;
 	}
-	
+
+	public boolean isZoneCleared() {
+		return zoneCleared;
+	}
+
 	public int getSpawnedAiAgents() {
 		return spawnedAiAgents.get();
 	}
@@ -232,11 +238,13 @@ class Zone extends SceneObject {
 		return zoneCRC;
 	}
 
-	public void setChatRoom(ChatRoom room) {
-		chatRoom = room;
+	public void setPlanetChatRoom(ChatRoom room) {
+		planetChatRoom = room;
 	}
 
-	public ChatRoom getChatRoom() {
-		return chatRoom;
+	public ChatRoom getPlanetChatRoom() {
+		return planetChatRoom;
 	}
+
 }
+

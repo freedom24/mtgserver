@@ -7,16 +7,14 @@
 
 #include "PlayerZoneComponent.h"
 
-#include "server/zone/managers/player/PlayerManager.h"
 #include "server/zone/managers/creature/CreatureManager.h"
-#include "server/zone/managers/weather/WeatherManager.h"
 #include "server/zone/managers/planet/PlanetManager.h"
 #include "server/zone/objects/player/PlayerObject.h"
 #include "server/zone/objects/creature/CreatureObject.h"
 #include "server/zone/objects/building/BuildingObject.h"
 #include "server/zone/Zone.h"
 
-void PlayerZoneComponent::notifyInsertToZone(SceneObject* sceneObject, Zone* newZone) {
+void PlayerZoneComponent::notifyInsertToZone(SceneObject* sceneObject, Zone* newZone) const {
 	//SceneObject* parent = sceneObject->getParent();
 
 	/*if (parent == NULL && !sceneObject->isInQuadTree() && sceneObject->isPlayerCreature()) {
@@ -44,7 +42,7 @@ void PlayerZoneComponent::notifyInsertToZone(SceneObject* sceneObject, Zone* new
 	//sceneObject->info("blia", true);
 }
 
-void PlayerZoneComponent::notifyInsert(SceneObject* sceneObject, QuadTreeEntry* entry) {
+void PlayerZoneComponent::notifyInsert(SceneObject* sceneObject, QuadTreeEntry* entry) const {
 	SceneObject* scno = static_cast<SceneObject*>( entry);
 
 	if (scno == sceneObject)
@@ -66,7 +64,7 @@ void PlayerZoneComponent::notifyInsert(SceneObject* sceneObject, QuadTreeEntry* 
 	scno->sendTo(sceneObject, true);
 }
 
-void PlayerZoneComponent::notifyDissapear(SceneObject* sceneObject, QuadTreeEntry* entry) {
+void PlayerZoneComponent::notifyDissapear(SceneObject* sceneObject, QuadTreeEntry* entry) const {
 	SceneObject* scno = static_cast<SceneObject*>( entry);
 
 	if (scno == sceneObject)
@@ -77,7 +75,7 @@ void PlayerZoneComponent::notifyDissapear(SceneObject* sceneObject, QuadTreeEntr
 	//sceneObject->removeNotifiedSentObject(scno);
 }
 
-void PlayerZoneComponent::switchZone(SceneObject* sceneObject, const String& newTerrainName, float newPostionX, float newPositionZ, float newPositionY, uint64 parentID, bool toggleInvisibility) {
+void PlayerZoneComponent::switchZone(SceneObject* sceneObject, const String& newTerrainName, float newPostionX, float newPositionZ, float newPositionY, uint64 parentID, bool toggleInvisibility) const {
 	if (sceneObject->isPlayerCreature()) {
 		CreatureObject* player = sceneObject->asCreatureObject();
 		PlayerObject* ghost = player->getPlayerObject();
@@ -106,7 +104,7 @@ void PlayerZoneComponent::switchZone(SceneObject* sceneObject, const String& new
 	ZoneComponent::switchZone(sceneObject, newTerrainName, newPostionX, newPositionZ, newPositionY, parentID, toggleInvisibility);
 }
 
-void PlayerZoneComponent::teleport(SceneObject* sceneObject, float newPositionX, float newPositionZ, float newPositionY, uint64 parentID) {
+void PlayerZoneComponent::teleport(SceneObject* sceneObject, float newPositionX, float newPositionZ, float newPositionY, uint64 parentID) const {
 	CreatureObject* player = NULL;
 
 	if (sceneObject->isPlayerCreature()) {
@@ -142,7 +140,7 @@ void PlayerZoneComponent::teleport(SceneObject* sceneObject, float newPositionX,
  * @post { this object is locked, in range objects are updated with the new position }
  * @param lightUpdate if true a standalone message is sent to the in range objects
  */
-void PlayerZoneComponent::updateZone(SceneObject* sceneObject, bool lightUpdate, bool sendPackets) {
+void PlayerZoneComponent::updateZone(SceneObject* sceneObject, bool lightUpdate, bool sendPackets) const {
 	ZoneComponent::updateZone(sceneObject, lightUpdate, sendPackets);
 
 	if (sceneObject->isPlayerCreature()) {
@@ -154,7 +152,7 @@ void PlayerZoneComponent::updateZone(SceneObject* sceneObject, bool lightUpdate,
 	}
 }
 
-void PlayerZoneComponent::updateZoneWithParent(SceneObject* sceneObject, SceneObject* newParent, bool lightUpdate, bool sendPackets) {
+void PlayerZoneComponent::updateZoneWithParent(SceneObject* sceneObject, SceneObject* newParent, bool lightUpdate, bool sendPackets) const {
 	ZoneComponent::updateZoneWithParent(sceneObject, newParent, lightUpdate, sendPackets);
 
 	if (sceneObject->getParent() != NULL && sceneObject->isPlayerCreature()) {
@@ -179,7 +177,7 @@ void PlayerZoneComponent::removeFromBuilding(SceneObject* sceneObject, BuildingO
 
 }*/
 
-void PlayerZoneComponent::notifySelfPositionUpdate(SceneObject* sceneObject) {
+void PlayerZoneComponent::notifySelfPositionUpdate(SceneObject* sceneObject) const {
 	ZoneComponent::notifySelfPositionUpdate(sceneObject);
 
 	/*if (sceneObject->getZone() == NULL)

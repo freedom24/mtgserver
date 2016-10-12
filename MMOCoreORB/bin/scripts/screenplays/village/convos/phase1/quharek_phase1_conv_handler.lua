@@ -1,13 +1,10 @@
 local ObjectManager = require("managers.object.object_manager")
-local VillageJediManagerCommon = require("managers.jedi.village.village_jedi_manager_common")
 local QuestManager = require("managers.quest.quest_manager")
-local FsCrafting1 = require("managers.jedi.village.phase1.fs_crafting1")
-local FsCrafting1Goto1 = require("managers.jedi.village.phase1.fs_crafting1_goto1")
 
-villageQuharekPhase1ConvoHandler = {  }
+villageQuharekPhase1ConvoHandler = conv_handler:new {}
 
-function villageQuharekPhase1ConvoHandler:getInitialScreen(pPlayer, pNpc, pConversationTemplate)
-	local convoTemplate = LuaConversationTemplate(pConversationTemplate)
+function villageQuharekPhase1ConvoHandler:getInitialScreen(pPlayer, pNpc, pConvTemplate)
+	local convoTemplate = LuaConversationTemplate(pConvTemplate)
 
 	if (VillageJediManagerTownship:getCurrentPhase() ~= 1) then
 		return convoTemplate:getScreen("intro_wrong_phase")
@@ -24,31 +21,15 @@ function villageQuharekPhase1ConvoHandler:getInitialScreen(pPlayer, pNpc, pConve
 	end
 end
 
-function villageQuharekPhase1ConvoHandler:runScreenHandlers(conversationTemplate, conversingPlayer, conversingNPC, selectedOption, conversationScreen)
-	local screen = LuaConversationScreen(conversationScreen)
+function villageQuharekPhase1ConvoHandler:runScreenHandlers(pConvTemplate, pPlayer, pNpc, selectedOption, pConvScreen)
+	local screen = LuaConversationScreen(pConvScreen)
 	local screenID = screen:getScreenID()
 
 	if (screenID == "get_to_work") then
-		QuestManager.activateQuest(conversingPlayer, QuestManager.quests.FS_CRAFT_PUZZLE_QUEST_00)
-		VillageJediManagerCommon.setActiveQuestThisPhase(conversingPlayer)
-		FsCrafting1Goto1:start(conversingPlayer)
+		QuestManager.activateQuest(pPlayer, QuestManager.quests.FS_CRAFT_PUZZLE_QUEST_00)
+		VillageJediManagerCommon.setActiveQuestThisPhase(pPlayer)
+		FsCrafting1Goto1:start(pPlayer)
 	end
 
-	return conversationScreen
-end
-
-function villageQuharekPhase1ConvoHandler:getNextConversationScreen(pConversationTemplate, pPlayer, selectedOption, pConversingNpc)
-	local pConversationSession = CreatureObject(pPlayer):getConversationSession()
-	local pLastConversationScreen = nil
-	if (pConversationSession ~= nil) then
-		local conversationSession = LuaConversationSession(pConversationSession)
-		pLastConversationScreen = conversationSession:getLastConversationScreen()
-	end
-	local conversationTemplate = LuaConversationTemplate(pConversationTemplate)
-	if (pLastConversationScreen ~= nil) then
-		local lastConversationScreen = LuaConversationScreen(pLastConversationScreen)
-		local optionLink = lastConversationScreen:getOptionLink(selectedOption)
-		return conversationTemplate:getScreen(optionLink)
-	end
-	return self:getInitialScreen(pPlayer, pConversingNpc, pConversationTemplate)
+	return pConvScreen
 end

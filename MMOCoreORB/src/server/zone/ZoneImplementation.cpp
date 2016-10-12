@@ -10,18 +10,16 @@
 #include "server/zone/managers/space/SpaceManager.h"
 #include "server/zone/managers/creature/CreatureManager.h"
 #include "server/zone/managers/components/ComponentManager.h"
-#include "server/zone/managers/objectcontroller/ObjectController.h"
-#include "server/zone/templates/SharedObjectTemplate.h"
 #include "server/zone/packets/player/GetMapLocationsResponseMessage.h"
 
 #include "server/zone/objects/cell/CellObject.h"
 #include "server/zone/objects/region/Region.h"
 #include "server/zone/objects/building/BuildingObject.h"
 #include "server/zone/objects/tangible/terminal/Terminal.h"
-#include "server/zone/templates/SharedObjectTemplate.h"
-#include "server/zone/templates/appearance/PortalLayout.h"
-#include "server/zone/templates/appearance/FloorMesh.h"
-#include "server/zone/templates/appearance/PathGraph.h"
+#include "templates/SharedObjectTemplate.h"
+#include "templates/appearance/PortalLayout.h"
+#include "templates/appearance/FloorMesh.h"
+#include "templates/appearance/PathGraph.h"
 
 #include "server/zone/managers/structure/StructureManager.h"
 
@@ -44,6 +42,7 @@ ZoneImplementation::ZoneImplementation(ZoneProcessServer* serv, const String& na
 	mapLocations = new MapLocationTable();
 
 	managersStarted = false;
+	zoneCleared = false;
 
 	//galacticTime = new Time();
 
@@ -95,22 +94,50 @@ void ZoneImplementation::startManagers() {
 }
 
 void ZoneImplementation::stopManagers() {
-	//if (zoneID > 45) //TODO: Change back to 9 sometimes. We use Zone 10 (Space Corellia) as a "prison" for the CSRs sending bad players there
-	//	return;
+	info("Shutting down.. ", true);
 
-	/*if (creatureManager != NULL) {
+	if (creatureManager != NULL) {
 		creatureManager->stop();
-
-		creatureManager->finalize();
 		creatureManager = NULL;
 	}
 
 	if (planetManager != NULL) {
-		planetManager->stop();
-
 		planetManager->finalize();
 		planetManager = NULL;
-	}*/
+	}
+
+	processor = NULL;
+	server = NULL;
+	mapLocations = NULL;
+	objectMap = NULL;
+	quadTree = NULL;
+	regionTree = NULL;
+}
+
+void ZoneImplementation::clearZone() {
+	Locker zonelocker(_this.getReferenceUnsafeStaticCast());
+
+	info("clearing zone", true);
+
+	creatureManager->unloadSpawnAreas();
+
+	HashTable<uint64, ManagedReference<SceneObject*> > tbl;
+	tbl.copyFrom(objectMap->getMap());
+
+	HashTableIterator<uint64, ManagedReference<SceneObject*> > iterator = tbl.iterator();
+
+	while (iterator.hasNext()) {
+		ManagedReference<SceneObject*> sceno = iterator.getNextValue();
+
+		if (sceno != NULL) {
+			Locker locker(sceno);
+			sceno->destroyObjectFromWorld(false);
+		}
+	}
+
+	zoneCleared = true;
+
+	info("zone clear", true);
 }
 
 float ZoneImplementation::getHeight(float x, float y) {
@@ -391,7 +418,7 @@ void ZoneImplementation::updateActiveAreas(TangibleObject* tano) {
 
 	Locker _alocker(tano->getContainerLock());
 
-	SortedVector<ManagedReference<ActiveArea* > > areas = *dynamic_cast<SortedVector<ManagedReference<ActiveArea* > >* >(tano->getActiveAreas());
+	SortedVector<ManagedReference<ActiveArea* > > areas = *tano->getActiveAreas();
 
 	_alocker.release();
 
@@ -439,7 +466,7 @@ void ZoneImplementation::updateActiveAreas(TangibleObject* tano) {
 		// we update the ones in quadtree.
 		for (int i = 0; i < entryObjects.size(); ++i) {
 			//update in new ones
-			ActiveArea* activeArea = dynamic_cast<ActiveArea*>(entryObjects.get(i).get());
+			ActiveArea* activeArea = static_cast<ActiveArea*>(entryObjects.get(i).get());
 
 			if (!tano->hasActiveArea(activeArea) && activeArea->containsPoint(worldPos.getX(), worldPos.getY(), tano->getParentID())) {
 				//Locker lockerO(object);

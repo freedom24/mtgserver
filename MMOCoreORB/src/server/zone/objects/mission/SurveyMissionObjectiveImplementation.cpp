@@ -8,10 +8,9 @@
 #include "server/zone/objects/mission/SurveyMissionObjective.h"
 #include "server/zone/objects/mission/MissionObserver.h"
 #include "server/zone/objects/mission/MissionObject.h"
-#include "server/zone/objects/scene/ObserverEventType.h"
+#include "templates/params/ObserverEventType.h"
 #include "server/zone/objects/creature/CreatureObject.h"
 #include "server/zone/objects/resource/ResourceSpawn.h"
-#include "server/zone/managers/object/ObjectManager.h"
 #include "server/zone/managers/mission/MissionManager.h"
 #include "server/zone/ZoneServer.h"
 
@@ -61,6 +60,10 @@ int SurveyMissionObjectiveImplementation::notifyObserverEvent(MissionObserver* o
 		}
 
 		ResourceSpawn* sampledSpawn = cast<ResourceSpawn*>( arg1);
+
+		if (sampledSpawn == NULL) {
+			return 0;
+		}
 
 		int sampledDensity = (int)arg2;
 		if (sampledSpawn->getSurveyMissionSpawnFamilyName() == spawnFamily && (sampledDensity >= efficiency)) {

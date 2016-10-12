@@ -11,7 +11,7 @@
 #include "server/zone/objects/mission/MissionObserver.h"
 #include "server/zone/objects/mission/MissionObject.h"
 #include "server/zone/managers/planet/PlanetManager.h"
-#include "server/zone/managers/terrain/TerrainManager.h"
+#include "terrain/manager/TerrainManager.h"
 #include "server/zone/managers/object/ObjectManager.h"
 #include "server/zone/Zone.h"
 #include "server/zone/objects/player/PlayerObject.h"
@@ -54,7 +54,7 @@ void MissionObjectiveImplementation::activate() {
 			timeRemaining = 1;
 		}
 
-		failTask = new FailMissionAfterCertainTimeTask(_this.getReferenceUnsafeStaticCast());
+		failTask = new FailMissionAfterCertainTimeTask(mission.get());
 		failTask->schedule(timeRemaining);
 	}
 }
@@ -111,7 +111,7 @@ void MissionObjectiveImplementation::awardFactionPoints() {
 	int factionPointsRebel = mission->getRewardFactionPointsRebel();
 	int factionPointsImperial = mission->getRewardFactionPointsImperial();
 
-	if ((factionPointsRebel <= 0 && factionPointsImperial <= 0) || mission->getFaction() == FactionManager::FACTIONNEUTRAL) {
+	if ((factionPointsRebel <= 0 && factionPointsImperial <= 0) || mission->getFaction() == Factions::FACTIONNEUTRAL) {
 		return;
 	}
 
@@ -125,7 +125,7 @@ void MissionObjectiveImplementation::awardFactionPoints() {
 
 			//Switch to get the correct order.
 			switch (mission->getFaction()) {
-			case FactionManager::FACTIONIMPERIAL:
+			case Factions::FACTIONIMPERIAL:
 				if (factionPointsImperial > 0) {
 					ghost->increaseFactionStanding("imperial", factionPointsImperial);
 				}
@@ -133,7 +133,7 @@ void MissionObjectiveImplementation::awardFactionPoints() {
 					ghost->decreaseFactionStanding("rebel", -factionPointsRebel);
 				}
 				break;
-			case FactionManager::FACTIONREBEL:
+			case Factions::FACTIONREBEL:
 				if (factionPointsRebel > 0) {
 					ghost->increaseFactionStanding("rebel", factionPointsRebel);
 				}
@@ -186,9 +186,9 @@ void MissionObjectiveImplementation::awardReward() {
 		playerCount = group->getNumberOfPlayerMembers();
 
 		for(int i = 0; i < group->getGroupSize(); i++) {
-			Reference<CreatureObject*> groupMember = group->getGroupMember(i)->isPlayerCreature() ? (group->getGroupMember(i)).castTo<CreatureObject*>() : NULL;
+			Reference<CreatureObject*> groupMember = group->getGroupMember(i);
 
-			if (groupMember != NULL) {
+			if (groupMember != NULL && groupMember->isPlayerCreature()) {
 				//Play mission complete sound.
 				groupMember->sendMessage(pmm->clone());
 
@@ -221,7 +221,7 @@ void MissionObjectiveImplementation::awardReward() {
 		owner->sendSystemMessage("@mission/mission_generic:group_too_far"); // Mission Alert! Some group members are too far away from the group to receive their reward and and are not eligible for reward.
 	}
 
-	int dividedReward = mission->getRewardCredits() / divisor;
+	int dividedReward = mission->getRewardCredits() / MAX(divisor, 1);
 
 	for (int i = 0; i < players.size(); i++) {
 		ManagedReference<CreatureObject*> player = players.get(i);

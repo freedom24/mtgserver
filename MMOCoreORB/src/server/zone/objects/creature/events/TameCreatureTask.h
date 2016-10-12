@@ -16,22 +16,28 @@ class TameCreatureTask : public Task {
 private:
 	enum Phase { INITIAL, SECOND, FINAL} currentPhase;
 	int originalMask;
-	ManagedReference<Creature*> creature;
-	ManagedReference<CreatureObject*> player;
+	ManagedWeakReference<Creature*> mob;
+	ManagedWeakReference<CreatureObject*> play;
 	bool force;
 	bool adult;
 
 public:
 	TameCreatureTask(Creature* cre, CreatureObject* playo, int pvpMask, bool forced, bool adults) : Task() {
 		currentPhase = INITIAL;
-		creature = cre;
-		player = playo;
+		mob = cre;
+		play = playo;
 		originalMask = pvpMask;
 		force = forced;
 		adult = adults;
 	}
 
 	void run() {
+		ManagedReference<Creature*> creature = mob.get();
+		ManagedReference<CreatureObject*> player = play.get();
+
+		if (creature == NULL || player == NULL)
+			return;
+
 		Locker locker(creature);
 
 		Locker _clocker(player, creature);
@@ -57,16 +63,20 @@ public:
 		}
 
 		ChatManager* chatManager = player->getZoneServer()->getChatManager();
+		ManagedReference<PlayerObject*> ghost = player->getPlayerObject();
+
+		if (ghost == NULL)
+			return;
 
 		switch (currentPhase) {
 		case INITIAL:
-			chatManager->broadcastMessage(player, "@hireling/hireling:taming_" + String::valueOf(System::random(4) + 1));
+			chatManager->broadcastChatMessage(player, "@hireling/hireling:taming_" + String::valueOf(System::random(4) + 1), 0, 0, 0, ghost->getLanguageID());
 			player->doAnimation("");
 			currentPhase = SECOND;
 			player->addPendingTask("tame_pet", this, 10000);
 			break;
 		case SECOND:
-			chatManager->broadcastMessage(player, "@hireling/hireling:taming_" + String::valueOf(System::random(4) + 1));
+			chatManager->broadcastChatMessage(player, "@hireling/hireling:taming_" + String::valueOf(System::random(4) + 1), 0, 0, 0, ghost->getLanguageID());
 			currentPhase = FINAL;
 			player->addPendingTask("tame_pet", this, 10000);
 			break;
@@ -94,6 +104,12 @@ public:
 	}
 
 	void success(bool adult) {
+		ManagedReference<CreatureObject*> player = play.get();
+		ManagedReference<Creature*> creature = mob.get();
+
+		if (creature == NULL || player == NULL)
+			return;
+
 		ZoneServer* zoneServer = player->getZoneServer();
 
 		String objectString = creature->getControlDeviceTemplate();
@@ -157,7 +173,7 @@ public:
 
 		if (creature->isAiAgent()) {
 			AiAgent* agent = cast<AiAgent*>(creature.get());
-			ManagedReference<SceneObject*> parent = player->getParent().get();
+			ManagedReference<CellObject*> parent = player->getParent().get().castTo<CellObject*>();
 
 			float respawn = agent->getRespawnTimer() * 1000;
 
@@ -179,11 +195,12 @@ public:
 				task->schedule(respawn);
 			}
 
+			agent->setLairTemplateCRC(0);
 			agent->setFollowObject(player);
 			agent->storeFollowObject();
 
-			agent->setHomeLocation(player->getPositionX(), player->getPositionZ(), player->getPositionY(), (parent != NULL && parent->isCellObject()) ? parent : NULL);
-			agent->setNextStepPosition(player->getPositionX(), player->getPositionZ(), player->getPositionY(), (parent != NULL && parent->isCellObject()) ? parent : NULL);
+			agent->setHomeLocation(player->getPositionX(), player->getPositionZ(), player->getPositionY(), parent);
+			agent->setNextStepPosition(player->getPositionX(), player->getPositionZ(), player->getPositionY(), parent);
 			agent->clearPatrolPoints();
 
 			agent->setCreatureBitmask(CreatureFlag::PET);
@@ -208,6 +225,11 @@ public:
 	}
 
 	void resetStatus() {
+		ManagedReference<Creature*> creature = mob.get();
+
+		if (creature == NULL)
+			return;
+
 		creature->setPvpStatusBitmask(originalMask, true);
 		if (creature->isAiAgent()) {
 			AiAgent* agent = cast<AiAgent*>(creature.get());

@@ -9,8 +9,8 @@
  */
 
 #include "SchematicMap.h"
-#include "server/zone/objects/draftschematic/draftslot/DraftSlot.h"
-#include "server/zone/objects/draftschematic/resourceweight/ResourceWeight.h"
+#include "templates/crafting/draftslot/DraftSlot.h"
+#include "templates/crafting/resourceweight/ResourceWeight.h"
 #include "engine/engine.h"
 
 //VectorMap<uint32, ManagedReference<DraftSchematic* > > SchematicMap::schematicIdMap;
@@ -28,8 +28,11 @@ SchematicMap::SchematicMap() : objectManager(NULL) {
 }
 
 SchematicMap::~SchematicMap() {
-	while(groupMap.size() > 0)
-		delete groupMap.get(0);
+	while (groupMap.size() > 0) {
+		DraftSchematicGroup* group = groupMap.get(0);
+		delete group;
+		groupMap.remove(0);
+	}
 }
 
 void SchematicMap::initialize(ZoneServer* server) {

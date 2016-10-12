@@ -23,7 +23,7 @@ rath_kanaz = Creature:new {
 	ferocity = 0,
 	pvpBitmask = ATTACKABLE,
 	creatureBitmask = KILLER,
-	optionsBitmask = 128,
+	optionsBitmask = AIENABLED,
 	diet = HERBIVORE,
 
 	templates = {"object/mobile/ig_assassin_droid.iff"},
@@ -42,7 +42,7 @@ rath_kanaz = Creature:new {
 	},
 	conversationTemplate = "",
 	defaultWeapon = "object/weapon/ranged/droid/droid_droideka_ranged.iff",
-	defaultAttack = "creaturerangedattack"
+	defaultAttack = "attack"
 }
 
 CreatureTemplates:addCreatureTemplate(rath_kanaz, "rath_kanaz")

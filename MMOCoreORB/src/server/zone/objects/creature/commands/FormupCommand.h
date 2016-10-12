@@ -27,6 +27,15 @@ public:
 			return GENERALERROR;
 
 		ManagedReference<CreatureObject*> player = cast<CreatureObject*>(creature);
+
+		if (player == NULL)
+			return GENERALERROR;
+
+		ManagedReference<PlayerObject*> ghost = player->getPlayerObject();
+
+		if (ghost == NULL)
+			return GENERALERROR;
+
 		ManagedReference<GroupObject*> group = player->getGroup();
 
 		if (!checkGroupLeader(player, group))
@@ -46,9 +55,9 @@ public:
 		if (!doFormUp(player, group))
 			return GENERALERROR;
 
-		if (player->isPlayerCreature() && player->getPlayerObject()->getCommandMessageString(STRING_HASHCODE("formup")).isEmpty()==false && creature->checkCooldownRecovery("command_message")) {
-			UnicodeString shout(player->getPlayerObject()->getCommandMessageString(STRING_HASHCODE("formup")));
- 	 	 	server->getChatManager()->broadcastMessage(player, shout, 0, 0, 80);
+		if (!ghost->getCommandMessageString(STRING_HASHCODE("formup")).isEmpty() && creature->checkCooldownRecovery("command_message")) {
+			UnicodeString shout(ghost->getCommandMessageString(STRING_HASHCODE("formup")));
+ 	 	 	server->getChatManager()->broadcastChatMessage(player, shout, 0, 0, 80, ghost->getLanguageID());
  	 	 	creature->updateCooldownTimer("command_message", 30 * 1000);
 		}
 
@@ -61,29 +70,25 @@ public:
 
 		for (int i = 0; i < group->getGroupSize(); i++) {
 
-			ManagedReference<SceneObject*> member = group->getGroupMember(i);
+			ManagedReference<CreatureObject*> member = group->getGroupMember(i);
 
 			if (member == NULL || !member->isPlayerCreature() || member->getZone() != leader->getZone())
 				continue;
 
-			CreatureObject* memberPlayer = cast<CreatureObject*>( member.get());
-
-			if (!isValidGroupAbilityTarget(leader, memberPlayer, false))
+			if (!isValidGroupAbilityTarget(leader, member, false))
 				continue;
 
-			Locker clocker(memberPlayer, leader);
+			Locker clocker(member, leader);
 
-			sendCombatSpam(memberPlayer);
+			sendCombatSpam(member);
 
-			if (memberPlayer->isDizzied())
-
-					memberPlayer->removeStateBuff(CreatureState::DIZZY);
+			if (member->isDizzied())
+				member->removeStateBuff(CreatureState::DIZZY);
 					
+			if (member->isStunned())
+				member->removeStateBuff(CreatureState::STUNNED);
 
-			if (memberPlayer->isStunned())
-					memberPlayer->removeStateBuff(CreatureState::STUNNED);
-
-			checkForTef(leader, memberPlayer);
+			checkForTef(leader, member);
 		}
 
 		return true;

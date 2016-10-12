@@ -15,10 +15,7 @@
 #include "server/zone/objects/player/sui/listbox/SuiListBox.h"
 
 void ResourceManagerImplementation::initialize() {
-	lua = new Lua();
-	lua->init();
-
-	if(!loadConfigData()) {
+	if (!loadConfigData()) {
 
 		loadDefaultConfig();
 
@@ -31,9 +28,6 @@ void ResourceManagerImplementation::initialize() {
 	loadSurveyData();
 }
 
-bool ResourceManagerImplementation::loadConfigFile() {
-	return lua->runFile("scripts/managers/resource_manager.lua");
-}
 void ResourceManagerImplementation::loadSurveyData() {
 	info("Loading survey data form surveys.db");
 	ObjectDatabaseManager* dbManager = ObjectDatabaseManager::instance();
@@ -57,9 +51,15 @@ void ResourceManagerImplementation::loadSurveyData() {
 	}
 	info(String::valueOf(i) + " surveys loaded.", true);
 }
+
 int ResourceManagerImplementation::notifyObserverEvent(uint32 eventType, Observable* observable, ManagedObject* arg1, int64 arg2) {
 	if (eventType == ObserverEventType::POSTURECHANGED) {
 		CreatureObject* creature = cast<CreatureObject*>( observable);
+
+		if (creature == NULL) {
+			return 0;
+		}
+
 		// Cancel Sampling on posture change
 		Reference<SampleTask*> task = creature->getPendingTask("sample").castTo<SampleTask*>( );
 		Reference<SampleResultsTask*> sampleResultsTask = creature->getPendingTask("sampleresults").castTo<SampleResultsTask*>( );
@@ -84,8 +84,13 @@ int ResourceManagerImplementation::notifyObserverEvent(uint32 eventType, Observa
 }
 
 bool ResourceManagerImplementation::loadConfigData() {
-	if (!loadConfigFile())
+	Lua* lua = new Lua();
+	lua->init();
+
+	if (!lua->runFile("scripts/managers/resource_manager.lua")) {
+		delete lua;
 		return false;
+	}
 
 	bool loadFromScript = lua->getGlobalInt("buildInitialResourcesFromScript");
 
@@ -103,7 +108,7 @@ bool ResourceManagerImplementation::loadConfigData() {
 	shiftInterval = lua->getGlobalInt("averageShiftTime");
 
 	int aveduration = lua->getGlobalInt("aveduration");
-	float spawnThrottling = float(lua->getGlobalInt("spawnThrottling")) / 100.0f;
+	int spawnThrottling = lua->getGlobalInt("spawnThrottling");
 	int lowerGateOverride = lua->getGlobalInt("lowerGateOverride");
 	int maxSpawnQuantity = lua->getGlobalInt("maxSpawnQuantity");
 
@@ -138,6 +143,8 @@ bool ResourceManagerImplementation::loadConfigData() {
 	String natpoolexc = lua->getGlobalString("nativepoolexcludes");
 	resourceSpawner->initializeNativePool(natpoolinc, natpoolexc);
 
+	delete lua;
+
 	return true;
 }
 
@@ -159,8 +166,9 @@ void ResourceManagerImplementation::loadDefaultConfig() {
 }
 
 void ResourceManagerImplementation::stop() {
-
-
+	processor = NULL;
+	zoneServer = NULL;
+	resourceSpawner = NULL;
 }
 
 void ResourceManagerImplementation::startResourceSpawner() {

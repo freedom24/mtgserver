@@ -6,7 +6,6 @@
 #define FIREHEAVYWEAPONCOMMAND_H_
 
 #include "server/zone/objects/scene/SceneObject.h"
-#include "engine/task/ScheduledTask.h"
 
 class FireHeavyWeaponCommand : public CombatQueueCommand {
 public:
@@ -54,21 +53,16 @@ public:
 			if (weaponData == NULL)
 				return GENERALERROR;
 
-			// TODO: This is probably actually determined by some combat result
-			String animName = "fire_heavy_" + weaponData->getAnimationType() + (System::random(1) ? "_light" : "_medium");
-			uint32 animCRC = animName.hashCode();
-
-			UnicodeString args = "combatSpam=" + weaponData->getCombatSpam() + ";animationCRC=" + String::valueOf(animCRC) + ";";
+			UnicodeString args = "combatSpam=" + weaponData->getCombatSpam() + ";";
 
 			int result = doCombatAction(creature, target, args, weapon);
 
 			if (result == SUCCESS) {
 				// We need to give some time for the combat animation to start playing before destroying the tano
-				SCHEDULE_TASK_1(weapon, 100, {
-
-					Locker locker(weapon_p);
-					weapon_p->decreaseUseCount();
-				});
+				Core::getTaskManager()->scheduleTask([weapon] {
+					Locker lock(weapon);
+					weapon->decreaseUseCount();
+				}, "FireHeavyWeaponTanoDecrementTask", 100);
 			}
 
 			return result;
@@ -78,6 +72,17 @@ public:
 		}
 
 		return GENERALERROR;
+	}
+
+	String getAnimation(TangibleObject* attacker, TangibleObject* defender, WeaponObject* weapon, uint8 hitLocation, int damage) const {
+		SharedWeaponObjectTemplate* weaponData = cast<SharedWeaponObjectTemplate*>(weapon->getObjectTemplate());
+
+		if (weaponData == NULL) {
+			warning("Null weaponData in FireHeavyWeapon::getAnimation");
+			return "";
+		}
+
+		return "fire_heavy_" + weaponData->getAnimationType() + getIntensity(weapon->getMaxDamage() / 2.0f, damage);
 	}
 
 	float getCommandDuration(CreatureObject *object, const UnicodeString& arguments) const {

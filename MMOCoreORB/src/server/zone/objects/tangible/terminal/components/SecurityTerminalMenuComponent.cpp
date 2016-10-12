@@ -12,14 +12,15 @@
 #include "server/zone/objects/scene/SceneObject.h"
 #include "server/zone/objects/creature/CreatureObject.h"
 #include "server/zone/objects/player/FactionStatus.h"
-#include "server/zone/objects/structure/StructureObject.h"
 #include "server/zone/objects/building/BuildingObject.h"
 #include "server/zone/managers/gcw/GCWManager.h"
 #include "server/zone/objects/tangible/TangibleObject.h"
 #include "server/zone/objects/player/sessions/SlicingSession.h"
 #include "server/zone/objects/tangible/tool/smuggler/PrecisionLaserKnife.h"
 
-void SecurityTerminalMenuComponent::fillObjectMenuResponse(SceneObject* sceneObject, ObjectMenuResponse* menuResponse, CreatureObject* player) {
+void SecurityTerminalMenuComponent::fillObjectMenuResponse(SceneObject* sceneObject, ObjectMenuResponse* menuResponse, CreatureObject* player) const {
+	if (!sceneObject->isTangibleObject())
+		return;
 
 	ManagedReference<BuildingObject*> building = cast<BuildingObject*>(sceneObject->getParentRecursively(SceneObjectType::FACTIONBUILDING).get().get());
 
@@ -42,11 +43,11 @@ void SecurityTerminalMenuComponent::fillObjectMenuResponse(SceneObject* sceneObj
 	if (gcwMan->isTerminalDamaged(cast<TangibleObject*>(sceneObject)))
 		menuResponse->addRadialMenuItem(20, 3, "@ui:repair");
 	else
-		menuResponse->addRadialMenuItem(20, 3, "@slicing/slicing:slice");
+		menuResponse->addRadialMenuItem(20, 3, "@hq:mnu_slice"); // Slice Security
 }
 
-int SecurityTerminalMenuComponent::handleObjectMenuSelect(SceneObject* sceneObject, CreatureObject* player, byte selectedID) {
-	if (sceneObject == NULL || !sceneObject->isTangibleObject() || player == NULL || player->isDead() || player->isIncapacitated() || selectedID != 20)
+int SecurityTerminalMenuComponent::handleObjectMenuSelect(SceneObject* sceneObject, CreatureObject* player, byte selectedID) const {
+	if (!sceneObject->isTangibleObject() || player->isDead() || player->isIncapacitated() || selectedID != 20)
 		return 1;
 
 	ManagedReference<BuildingObject*> building = cast<BuildingObject*>(sceneObject->getParentRecursively(SceneObjectType::FACTIONBUILDING).get().get());

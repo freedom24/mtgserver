@@ -17,13 +17,12 @@ using namespace server::zone;
 
 #include "server/login/LoginServer.h"
 
-namespace server {
-	namespace conf {
-		class ConfigManager;
-	}
+namespace conf {
+	class ConfigManager;
 }
 
-using namespace server::conf;
+
+using namespace conf;
 
 class ServerDatabase;
 class MantisDatabase;
@@ -69,6 +68,8 @@ class ServerCore : public Core, public Logger {
 	static bool truncateAllData;
 
 	static ServerCore* instance;
+
+	bool handleCmds;
 
 public:
 	ServerCore(bool truncateDatabases, SortedVector<String>& args);

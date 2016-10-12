@@ -7,10 +7,10 @@
 
 #include "LuaTangibleObject.h"
 #include "server/zone/objects/tangible/TangibleObject.h"
-#include "server/zone/objects/creature/CreatureFlag.h"
-#include "server/zone/templates/params/PaletteColorCustomizationVariable.h"
-#include "server/zone/templates/customization/AssetCustomizationManagerTemplate.h"
-#include "server/zone/templates/appearance/PaletteTemplate.h"
+#include "templates/params/creature/CreatureFlag.h"
+#include "templates/params/PaletteColorCustomizationVariable.h"
+#include "templates/customization/AssetCustomizationManagerTemplate.h"
+#include "templates/appearance/PaletteTemplate.h"
 
 const char LuaTangibleObject::className[] = "LuaTangibleObject";
 
@@ -36,6 +36,9 @@ Luna<LuaTangibleObject>::RegType LuaTangibleObject::Register[] = {
 		{ "getLuaStringData", &LuaTangibleObject::getLuaStringData },
 		{ "setLuaStringData", &LuaTangibleObject::setLuaStringData },
 		{ "deleteLuaStringData", &LuaTangibleObject::deleteLuaStringData },
+		{ "setOptionBit", &LuaTangibleObject::setOptionBit},
+		{ "clearOptionBit", &LuaTangibleObject::clearOptionBit},
+		{ "getCraftersName", &LuaTangibleObject::getCraftersName},
 		{ 0, 0 }
 };
 
@@ -222,14 +225,18 @@ int LuaTangibleObject::isInvisible(lua_State* L) {
 }
 
 int LuaTangibleObject::setLuaStringData(lua_State *L) {
-	String key = lua_tostring(L, -1);
-	String data = lua_tostring(L, -2);
+	Locker locker(realObject);
+
+	String key = lua_tostring(L, -2);
+	String data = lua_tostring(L, -1);
 
 	realObject->setLuaStringData(key, data);
 	return 0;
 }
 
 int LuaTangibleObject::deleteLuaStringData(lua_State* L) {
+	Locker locker(realObject);
+
 	String key = lua_tostring(L, -1);
 
 	realObject->deleteLuaStringData(key);
@@ -242,6 +249,32 @@ int LuaTangibleObject::getLuaStringData(lua_State *L) {
 	String data = realObject->getLuaStringData(key);
 
 	lua_pushstring(L, data.toCharArray());
+
+	return 1;
+}
+
+int LuaTangibleObject::setOptionBit(lua_State* L) {
+	uint32 bit = lua_tointeger(L, -1);
+
+	Locker locker(realObject);
+
+	realObject->setOptionBit(bit, true);
+
+	return 0;
+}
+
+int LuaTangibleObject::clearOptionBit(lua_State* L) {
+	uint32 bit = lua_tointeger(L, -1);
+
+	Locker locker(realObject);
+
+	realObject->clearOptionBit(bit, true);
+
+	return 0;
+}
+
+int LuaTangibleObject::getCraftersName(lua_State* L) {
+	lua_pushstring(L, realObject->getCraftersName().toCharArray());
 
 	return 1;
 }

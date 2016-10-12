@@ -49,6 +49,7 @@
 #include "server/zone/objects/guild/sui/GuildTransferLeaderAckSuiCallback.h"
 #include "server/zone/objects/guild/sui/GuildTransferLotsSuiCallback.h"
 #include "server/zone/objects/guild/sui/GuildVoteSuiCallback.h"
+#include "server/zone/objects/guild/sui/GuildAdminInfoSuiCallback.h"
 #include "server/zone/objects/creature/commands/sui/ListGuildsResponseSuiCallback.h"
 
 #include "server/zone/packets/scene/SceneObjectCreateMessage.h"
@@ -80,6 +81,14 @@ void GuildManagerImplementation::loadLuaConfig() {
 
 	delete lua;
 	lua = NULL;
+}
+
+void GuildManagerImplementation::stop() {
+	guildList.removeAll(NULL);
+	sponsoredPlayers.removeAll();
+	chatManager = NULL;
+	processor = NULL;
+	server = NULL;
 }
 
 void GuildManagerImplementation::loadGuilds() {
@@ -244,8 +253,9 @@ void GuildManagerImplementation::processGuildUpdate(GuildObject* guild) {
 			params.setStringId("@guild:open_elections_email_body"); // Your guild has started an election for a new guild leader! You may vote at the guild terminal in your PA Hall. If you are a full member of the guild, you may opt to run for the position of guild leader by registering at the guild terminal. A new guild leader will be elected in exactly two weeks. The guild member with the most votes at that time will become guild leader.
 		} else {
 			CreatureObject* leaderCreo = leader.castTo<CreatureObject*>();
+			auto leaderGhost = leaderCreo->getPlayerObject();
 
-			if (leaderCreo->getPlayerObject()->getDaysSinceLastLogout() >= 30) {
+			if ((leaderGhost == NULL) || (leaderGhost->getDaysSinceLastLogout() >= 30)) {
 				startElections = true;
 				params.setStringId("@guild:open_elections_absent_email_body"); // Your guild leader has not logged in for an extended period of time. In order to enable your guild to continue to operate efficiently, the guild leader voting system has been enabled. You may vote at the guild terminal in your PA Hall. If you are a full member of the guild, you may opt to run for the position of guild leader by registering at the guild terminal. A new guild leader will be elected in exactly two weeks. The guild member with the most votes at that time will become guild leader.
 			}
@@ -347,11 +357,10 @@ void GuildManagerImplementation::processGuildElection(GuildObject* guild) {
 void GuildManagerImplementation::destroyGuild(GuildObject* guild, StringIdChatParameter& mailbody) {
 	Locker _lock(_this.getReferenceUnsafeStaticCast());
 
+	//Destroy GuildChat
 	ManagedReference<ChatRoom*> guildChat = guild->getChatRoom();
-
 	if (guildChat != NULL) {
 		ManagedReference<ChatRoom*> guildLobby = guildChat->getParent();
-
 		chatManager->destroyRoom(guildChat);
 
 		if (guildLobby != NULL)
@@ -445,6 +454,7 @@ void GuildManagerImplementation::destroyGuild(GuildObject* guild, StringIdChatPa
 		//Send the delta to everyone currently online!
 		chatManager->broadcastMessage(gildd3);
 	}
+
 }
 
 void GuildManagerImplementation::sendGuildCreateNameTo(CreatureObject* player, GuildTerminal* terminal) {
@@ -467,7 +477,7 @@ void GuildManagerImplementation::sendGuildCreateNameTo(CreatureObject* player, G
 	player->sendMessage(inputBox->generateMessage());
 }
 
-void GuildManagerImplementation::sendGuildChangeNameTo(CreatureObject* player, GuildObject* guild, GuildTerminal* terminal) {
+void GuildManagerImplementation::sendGuildChangeNameTo(CreatureObject* player, GuildObject* guild) {
 	if (guild == NULL)
 		return;
 
@@ -488,8 +498,6 @@ void GuildManagerImplementation::sendGuildChangeNameTo(CreatureObject* player, G
 	inputBox->setPromptTitle("@guild:namechange_name_title"); // Change Guild Name
 	inputBox->setPromptText("@guild:namechange_name_prompt"); // Enter the name to which you wish to change your guild. Guild names must be between 1 and 25 characters. Name changes take approximately 7 days to take effect.
 	inputBox->setMaxInputSize(24);
-	inputBox->setUsingObject(terminal);
-	inputBox->setForceCloseDistance(32);
 
 	player->getPlayerObject()->addSuiBox(inputBox);
 	player->sendMessage(inputBox->generateMessage());
@@ -550,7 +558,7 @@ void GuildManagerImplementation::sendGuildCreateAbbrevTo(CreatureObject* player,
 	player->sendMessage(inputBox->generateMessage());
 }
 
-void GuildManagerImplementation::sendGuildChangeAbbrevTo(CreatureObject* player, GuildObject* guild, GuildTerminal* terminal) {
+void GuildManagerImplementation::sendGuildChangeAbbrevTo(CreatureObject* player, GuildObject* guild) {
 	player->getPlayerObject()->closeSuiWindowType(SuiWindowType::GUILD_CHANGE_ABBREV);
 
 	ManagedReference<SuiInputBox*> inputBox = new SuiInputBox(player, SuiWindowType::GUILD_CHANGE_ABBREV);
@@ -558,8 +566,6 @@ void GuildManagerImplementation::sendGuildChangeAbbrevTo(CreatureObject* player,
 	inputBox->setPromptTitle("@guild:namechange_abbrev_title"); // Change Guild Abbreviation
 	inputBox->setPromptText("@guild:namechange_abbrev_prompt"); // Enter the abbreviation for your guild's new name. Guild abbreviations must be between 1 and 5 characters in length.
 	inputBox->setMaxInputSize(4);
-	inputBox->setUsingObject(terminal);
-	inputBox->setForceCloseDistance(32);
 
 	player->getPlayerObject()->addSuiBox(inputBox);
 	player->sendMessage(inputBox->generateMessage());
@@ -635,7 +641,7 @@ GuildObject* GuildManagerImplementation::createGuild(CreatureObject* player, con
 	ManagedReference<ChatRoom*> guildChat = createGuildChannels(guild);
 
 	guildChat->sendTo(player);
-	guildChat->addPlayer(player);
+	server->getChatManager()->handleChatEnterRoomById(player, guildChat->getRoomID(), -1, true);
 
 	//Handle setting of the guild leader.
 	GuildMemberInfo* gmi = guild->getMember(playerID);
@@ -668,12 +674,18 @@ ChatRoom* GuildManagerImplementation::createGuildChannels(GuildObject* guild) {
 
 	ManagedReference<ChatRoom*> guildLobby = chatManager->createRoom(String::valueOf(guild->getGuildID()), guildRoom);
 	guildLobby->setPrivate();
-	guildRoom->addSubRoom(guildLobby);
 
 	ManagedReference<ChatRoom*> guildChat = chatManager->createRoom("GuildChat", guildLobby);
+
+	Locker glocker(guildChat);
+
 	guildChat->setPrivate();
 	guildChat->setTitle(String::valueOf(guild->getGuildID()));
-	guildLobby->addSubRoom(guildChat);
+	guildChat->setOwnerID(guild->getObjectID());
+	guildChat->setCanEnter(true);
+	guildChat->setChatRoomType(ChatRoom::GUILD);
+
+	glocker.release();
 
 	Locker locker(guild);
 
@@ -934,7 +946,10 @@ void GuildManagerImplementation::sendTransferAckTo(CreatureObject* player, const
 }
 
 void GuildManagerImplementation::transferLeadership(CreatureObject* newLeader, CreatureObject* oldLeader, bool election) {
-	GuildObject* guild = newLeader->getGuildObject().get();
+	ManagedReference<GuildObject*> guild = newLeader->getGuildObject().get();
+
+	if (guild == NULL)
+		return;
 
 	Locker glock(guild);
 	guild->setGuildLeaderID(newLeader->getObjectID());
@@ -948,9 +963,9 @@ void GuildManagerImplementation::transferLeadership(CreatureObject* newLeader, C
 	}
 
 	if (oldLeader != NULL && oldLeader != newLeader) {
-	
+
 		GuildMemberInfo* gmiOldLeader = guild->getMember(oldLeader->getObjectID());
-		
+
 		if (gmiOldLeader != NULL){
 			gmiOldLeader->setPermissions(GuildObject::PERMISSION_NONE);
 		}
@@ -1236,10 +1251,17 @@ void GuildManagerImplementation::kickMember(CreatureObject* player, CreatureObje
 		target->broadcastMessage(creod6, true);
 
 		ManagedReference<ChatRoom*> guildChat = guild->getChatRoom();
-
 		if (guildChat != NULL) {
-			guildChat->removePlayer(target);
-			guildChat->sendDestroyTo(target);
+			EXECUTE_TASK_2(guildChat, target, {
+				Locker locker(target_p);
+				Locker cLocker(guildChat_p, target_p);
+				guildChat_p->removePlayer(target_p);
+				guildChat_p->sendDestroyTo(target_p);
+
+				ManagedReference<ChatRoom*> parentRoom = guildChat_p->getParent();
+				if (parentRoom != NULL)
+					parentRoom->sendDestroyTo(target_p);
+			});
 		}
 
 		PlayerObject* targetGhost = target->getPlayerObject();
@@ -1406,7 +1428,7 @@ void GuildManagerImplementation::sponsorPlayer(CreatureObject* player, const Str
 
 	if (target->isInGuild()) {
 		StringIdChatParameter params;
-		params.setTU(target);
+		params.setTU(target->getObjectID());
 		params.setStringId("@guild:sponsor_already_in_guild"); // %TU is already in a guild.
 		player->sendSystemMessage(params);
 		return;
@@ -1414,7 +1436,7 @@ void GuildManagerImplementation::sponsorPlayer(CreatureObject* player, const Str
 
 	StringIdChatParameter params;
 	params.setStringId("@guild:sponsor_self"); // You sponsor %TU for membership in %TT.
-	params.setTU(target);
+	params.setTU(target->getObjectID());
 	params.setTT(guild->getGuildName());
 	player->sendSystemMessage(params);
 
@@ -1603,7 +1625,7 @@ void GuildManagerImplementation::acceptSponsoredPlayer(CreatureObject* player, u
 
 		if (guildChat != NULL) {
 			guildChat->sendTo(target);
-			guildChat->addPlayer(target);
+			server->getChatManager()->handleChatEnterRoomById(target, guildChat->getRoomID(), -1, true);
 		}
 
 		PlayerObject* targetGhost = target->getPlayerObject();
@@ -1866,6 +1888,9 @@ void GuildManagerImplementation::sendAdminGuildInfoTo(CreatureObject* player, Gu
 	ManagedReference<SuiMessageBox*> box = new SuiMessageBox(player, SuiWindowType::ADMIN_GUILDINFO);
 
 	box->setPromptTitle("Guild Info");
+	box->setOkButton(true, "@guild:menu_namechange");
+	box->setCancelButton(true, "@cancel");
+	box->setCallback(new GuildAdminInfoSuiCallback(server, guild));
 
 	StringBuffer promptText;
 	promptText << "Guild Name: " << guild->getGuildName() << " <" << guild->getGuildAbbrev() << ">" << endl;
@@ -1877,11 +1902,17 @@ void GuildManagerImplementation::sendAdminGuildInfoTo(CreatureObject* player, Gu
 
 	promptText << "Guild Leader: " << (leader == NULL ? "None" : leader->getFirstName()) << endl;
 
+	if (leader != NULL) {
+		PlayerObject* leaderGhost = leader->getPlayerObject();
+
+		promptText << "Days since guild leader's last logout: " << (leaderGhost == NULL ? "Unknown" : String::valueOf(leaderGhost->getDaysSinceLastLogout())) << endl;
+	}
+
 	Time* updateTime = guild->getNextUpdateTime();
 	promptText << "Next guild update: " << updateTime->getFormattedTime() << endl;
 
 	bool renamePending = guild->isRenamePending();
-	promptText << "Rename Pending?: " << (renamePending ? "Yes" : "No") << endl;
+	promptText << endl << "Rename Pending?: " << (renamePending ? "Yes" : "No") << endl;
 
 	if (renamePending) {
 		promptText << "Pending Name: " << guild->getPendingNewName() << " <" << guild->getPendingNewAbbrev() << ">" << endl;
@@ -1894,6 +1925,16 @@ void GuildManagerImplementation::sendAdminGuildInfoTo(CreatureObject* player, Gu
 			renamer = player->getZoneServer()->getObject(renamerID).castTo<CreatureObject*>();
 			promptText << "Renamer: " << (renamer == NULL ? "None" : renamer->getFirstName()) << endl;
 		}
+	}
+
+	bool electionActive = guild->isElectionEnabled();
+
+	promptText << endl << "Election Active?: " << (electionActive ? "Yes" : "No") << endl;
+
+	if (electionActive) {
+		byte electionState = guild->getElectionState();
+
+		promptText << "Election ends next update?: " << (electionState == GuildObject::ELECTION_SECOND_WEEK ? "Yes" : "No") << endl;
 	}
 
 	promptText << endl << "Guild Members (" << guild->getTotalMembers() << "):" << endl;
@@ -1968,6 +2009,7 @@ void GuildManagerImplementation::sendAdminGuildInfoTo(CreatureObject* player, Gu
 
 	box->setPromptText(promptText.toString());
 
+	player->getPlayerObject()->addSuiBox(box);
 	player->sendMessage(box->generateMessage());
 
 	return;
@@ -2028,13 +2070,6 @@ void GuildManagerImplementation::leaveGuild(CreatureObject* player, GuildObject*
 	creod6->close();
 	player->broadcastMessage(creod6, true);
 
-	ManagedReference<ChatRoom*> guildChat = guild->getChatRoom();
-
-	if (guildChat != NULL) {
-		guildChat->removePlayer(player);
-		guildChat->sendDestroyTo(player);
-	}
-
 	PlayerObject* ghost = player->getPlayerObject();
 
 	if (ghost != NULL) {
@@ -2049,6 +2084,20 @@ void GuildManagerImplementation::leaveGuild(CreatureObject* player, GuildObject*
 	if (guild->getGuildLeaderID() == 0 && !guild->isElectionEnabled()) {
 		toggleElection(guild, NULL);
 	}
+
+	clocker.release();
+
+	ManagedReference<ChatRoom*> guildChat = guild->getChatRoom();
+	if (guildChat != NULL) {
+		Locker chatLocker(guildChat, player);
+		guildChat->removePlayer(player);
+		guildChat->sendDestroyTo(player);
+
+		ManagedReference<ChatRoom*> parentRoom = guildChat->getParent();
+		if (parentRoom != NULL)
+			parentRoom->sendDestroyTo(player);
+	}
+
 }
 
 void GuildManagerImplementation::sendGuildMail(const String& subject, StringIdChatParameter& body, GuildObject* guild) {

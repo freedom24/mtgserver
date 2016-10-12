@@ -22,8 +22,8 @@ ara_niorri = Creature:new {
 	tamingChance = 0,
 	ferocity = 0,
 	pvpBitmask = NONE,
-	creatureBitmask = PACK,
-	optionsBitmask = 136,
+	creatureBitmask = NONE,
+	optionsBitmask = AIENABLED + CONVERSABLE,
 	diet = HERBIVORE,
 
 	templates = {
@@ -32,7 +32,7 @@ ara_niorri = Creature:new {
 	},
 	lootGroups = {},
 	weapons = {},
-	conversationTemplate = "talon_karrde_mission_target_convotemplate",
+	conversationTemplate = "zakarisz_ghent_mission_target_convotemplate",
 	attacks ={}
 }
 

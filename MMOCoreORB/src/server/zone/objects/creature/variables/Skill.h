@@ -2,7 +2,7 @@
 #define SKILL_H_
 
 #include "engine/engine.h"
-#include "server/zone/templates/datatables/DataTableRow.h"
+#include "templates/datatables/DataTableRow.h"
 
 namespace server {
 namespace zone {
@@ -18,7 +18,7 @@ using namespace server::zone::managers::skill;
 
 class Skill : public Object {
 protected:
-	Reference<Skill*> parentNode;
+	WeakReference<Skill*> parentNode;
 	Vector<Reference<Skill*> > childNodes;
 
 	String skillName;
@@ -76,6 +76,7 @@ public:
 		searchable = false;
 		skillsRequiredCount = 0;
 		pointsRequired = 0;
+		parentNode = NULL;
 	}
 
 	~Skill() {
@@ -245,7 +246,7 @@ public:
 	}
 
 	inline Skill* getParent() {
-		return parentNode;
+		return parentNode.get();
 	}
 
 	inline int getTotalChildren() {

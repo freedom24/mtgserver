@@ -5,10 +5,10 @@
 #include "server/zone/objects/creature/CreatureObject.h"
 #include "server/zone/objects/player/PlayerObject.h"
 #include "server/zone/packets/object/ObjectMenuResponse.h"
-#include "server/zone/templates/tangible/EventPerkDeedTemplate.h"
+#include "templates/tangible/EventPerkDeedTemplate.h"
 #include "server/chat/StringIdChatParameter.h"
 
-void EventPerkMenuComponent::fillObjectMenuResponse(SceneObject* sceneObject, ObjectMenuResponse* menuResponse, CreatureObject* player) {
+void EventPerkMenuComponent::fillObjectMenuResponse(SceneObject* sceneObject, ObjectMenuResponse* menuResponse, CreatureObject* player) const {
 	TangibleObjectMenuComponent::fillObjectMenuResponse(sceneObject, menuResponse, player);
 
 	EventPerkDataComponent* data = cast<EventPerkDataComponent*>(sceneObject->getDataObjectComponent()->get());
@@ -54,7 +54,7 @@ void EventPerkMenuComponent::fillObjectMenuResponse(SceneObject* sceneObject, Ob
 	}
 }
 
-int EventPerkMenuComponent::handleObjectMenuSelect(SceneObject* sceneObject, CreatureObject* player, byte selectedID) {
+int EventPerkMenuComponent::handleObjectMenuSelect(SceneObject* sceneObject, CreatureObject* player, byte selectedID) const {
 	EventPerkDataComponent* data = cast<EventPerkDataComponent*>(sceneObject->getDataObjectComponent()->get());
 
 	if (sceneObject->getGameObjectType() == SceneObjectType::EVENTPERK || data == NULL) {
@@ -118,7 +118,7 @@ int EventPerkMenuComponent::handleObjectMenuSelect(SceneObject* sceneObject, Cre
 			return 1;
 		}
 
-		if (ghost == NULL || ghost->getEventPerkCount() > 5) {
+		if (ghost == NULL || (!ghost->isPrivileged() && ghost->getEventPerkCount() > 5)) {
 			player->sendSystemMessage("@event_perk:redeed_too_many_deeds"); // You have too many rental deeds in your possession and cannot redeed this rental.
 			return 1;
 		}

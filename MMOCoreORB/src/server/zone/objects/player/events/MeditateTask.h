@@ -12,12 +12,11 @@
 #define MEDITATETASK_H_
 
 #include "engine/engine.h"
-#include "server/zone/managers/objectcontroller/ObjectController.h"
 #include "server/zone/packets/chat/ChatSystemMessage.h"
 #include "server/chat/StringIdChatParameter.h"
 #include "server/zone/objects/player/PlayerObject.h"
 #include "server/zone/objects/creature/CreatureObject.h"
-#include "server/zone/objects/creature/CreatureAttribute.h"
+#include "templates/params/creature/CreatureAttribute.h"
 
 class MeditateTask: public Task {
 	ManagedReference<CreatureObject*> player;

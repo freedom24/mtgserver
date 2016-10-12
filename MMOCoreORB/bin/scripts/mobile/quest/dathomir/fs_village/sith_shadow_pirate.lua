@@ -1,7 +1,7 @@
 sith_shadow_pirate = Creature:new {
 	objectName = "@mob/creature_names:shadow_pirate",
 	socialGroup = "sith_shadow",
-	faction = "sith_shadow_nonaggro",
+	faction = "sith_shadow",
 	level = 32,
 	chanceHit = 0.39,
 	damageMin = 290,
@@ -22,7 +22,7 @@ sith_shadow_pirate = Creature:new {
 	ferocity = 0,
 	pvpBitmask = ATTACKABLE + AGGRESSIVE + ENEMY,
 	creatureBitmask = PACK + KILLER,
-	optionsBitmask = 128,
+	optionsBitmask = AIENABLED,
 	diet = HERBIVORE,
 
 	templates = {

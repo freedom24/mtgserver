@@ -8,7 +8,7 @@
 #ifndef PLAYERINCAPACITATIONRECOVERTASK_H_
 #define PLAYERINCAPACITATIONRECOVERTASK_H_
 
-#include "server/zone/objects/creature/CreatureAttribute.h"
+#include "templates/params/creature/CreatureAttribute.h"
 #include "server/zone/objects/creature/CreatureObject.h"
 #include "server/zone/packets/tangible/UpdatePVPStatusMessage.h"
 #include "server/zone/packets/creature/CreatureObjectMessage6.h"
@@ -42,6 +42,8 @@ public:
 		try {
 			Locker playerLocker(player);
 
+
+
 			PlayerObject* ghost = player->getPlayerObject();
 
 			if (ghost == NULL) {
@@ -71,7 +73,11 @@ public:
 			if (mind < 0)
 				player->setHAM(CreatureAttribute::MIND, 1);
 
+			player->removeFeignedDeath();
+
 			player->setPosture(CreaturePosture::UPRIGHT);
+
+			player->notifyObservers(ObserverEventType::CREATUREREVIVED, NULL, 0);
 
 			if (ghost->getForcePowerMax() > 0 && ghost->getForcePower() < ghost->getForcePowerMax()) {
 				ghost->activateForcePowerRegen();

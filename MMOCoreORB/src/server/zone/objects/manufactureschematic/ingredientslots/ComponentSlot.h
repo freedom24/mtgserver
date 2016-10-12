@@ -99,7 +99,7 @@ public:
 				incomingTano = crate->extractObject(crate->getUseCount());
 		}
 
-		if(incomingTano == NULL) {
+		if (incomingTano == NULL) {
 			error("Incoming object is NULL");
 			return false;
 		}
@@ -107,29 +107,28 @@ public:
 		incomingTano->sendAttributeListTo(player);
 
 		ObjectManager* objectManager = ObjectManager::instance();
-		ManagedReference<TangibleObject*> itemToUse = NULL;
+		ManagedReference<TangibleObject*> itemToUse = cast<TangibleObject*>( objectManager->cloneObject(incomingTano));
+		Locker ilocker(itemToUse);
 
-		if(incomingTano->getUseCount() > slotNeeds) {
+		itemToUse->setParent(NULL);
 
-			int newCount = incomingTano->getUseCount() - slotNeeds;
-			incomingTano->setUseCount(newCount, true);
-
-			itemToUse = cast<TangibleObject*>( objectManager->cloneObject(incomingTano));
-
-			Locker ilocker(itemToUse);
-
-			if (itemToUse->hasAntiDecayKit()) {
-				itemToUse->removeAntiDecayKit();
-			}
-
-			itemToUse->setUseCount(slotNeeds, false);
-			itemToUse->setParent(NULL);
-			itemToUse->sendAttributeListTo(player);
-
-		} else {
-
-			itemToUse = incomingTano;
+		if (itemToUse->hasAntiDecayKit()) {
+			itemToUse->removeAntiDecayKit();
 		}
+
+		if (incomingTano->getUseCount() > slotNeeds) {
+			incomingTano->decreaseUseCount(slotNeeds);
+			itemToUse->setUseCount((slotNeeds > 1 ? slotNeeds : 0), false);
+		} else {
+			Locker tLocker(incomingTano);
+			incomingTano->destroyObjectFromWorld(true);
+			incomingTano->destroyObjectFromDatabase(true);
+		}
+
+		itemToUse->sendTo(player, true); // Without this, the new object does not appear in the crafting slot
+		itemToUse->sendAttributeListTo(player);
+
+		ilocker.release();
 
 		Vector<ManagedReference<TangibleObject*> > itemsToAdd;
 
@@ -138,17 +137,18 @@ public:
 
 			ManagedReference<TangibleObject*> newTano = cast<TangibleObject*>( objectManager->cloneObject(itemToUse));
 
-			Locker ilocker(newTano);
+			Locker tlocker(newTano);
 
 			if (newTano->hasAntiDecayKit()) {
 				newTano->removeAntiDecayKit();
 			}
 
 			newTano->setParent(NULL);
-			newTano->setUseCount(1, false);
+			newTano->setUseCount(0, false);
+			newTano->sendTo(player, true); // Without this, the new object does not appear in the crafting slot
 			itemsToAdd.add(newTano);
 
-			ilocker.release();
+			tlocker.release();
 
 			Locker itemToUseLocker(itemToUse);
 
@@ -158,6 +158,7 @@ public:
 		while(itemsToAdd.size() > 0) {
 			ManagedReference<TangibleObject*> tano = itemsToAdd.remove(0);
 			if(!satchel->transferObject(tano, -1, true)) {
+
 				error("cant transfer crafting component Has Items: " + String::valueOf(satchel->getContainerObjectsSize()));
 				return false;
 			}
@@ -199,8 +200,16 @@ public:
 		int quantity = 0;
 		for(int i = 0; i < contents.size(); ++i) {
 			TangibleObject* tano =  contents.elementAt(i);
-			if(tano != NULL)
-				quantity += tano->getUseCount();
+			if(tano != NULL) {
+				uint32 useCount = tano->getUseCount();
+
+				// Objects with 0 uses that have not been destroyed are still valid and "usable" one time only
+				if(useCount == 0)
+					useCount++;
+
+				quantity += useCount;
+			}
+
 		}
 		return quantity;
 	}
@@ -230,11 +239,15 @@ public:
 	}
 
 	Vector<uint64> getOIDVector() {
-		Vector<uint64> oid;
-		for(int i = 0; i < getSlotQuantity(); ++i) {
-			oid.add(getPrototype()->getObjectID());
+		Vector<uint64> oids;
+		for (int i = 0; i < getSlotQuantity(); ++i) {
+			uint64 oid = contents.get(i)->getObjectID();
+
+			if (!oids.contains(oid))
+				oids.add(oid);
 		}
-		return oid;
+
+		return oids;
 	}
 
 	// We add 1 for each item in the slot

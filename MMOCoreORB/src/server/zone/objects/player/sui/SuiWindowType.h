@@ -198,6 +198,10 @@ public:
 		LOTTERY_INFO					   = 356,
 		LOTTERY_REGISTRATION			   = 357,
 
+		// Scavenger Droid
+		SCAVENGER_INFO					   = 370,
+		SCAVENGER_ITEM_LIST				   = 371,
+
 
 		// Ranger 400 - 401
 		RANGER_TRACK_OPTIONS               = 400,
@@ -262,7 +266,10 @@ public:
 		DROID_MAINTENANCE_RUN_LIST         = 1035,
 		DROID_ADD_STRUCTURE_AMOUNT         = 1036,
 		PET_FIX_DIALOG					   = 1037,
-		JUKEBOX_SELECTION				   = 1038
+		JUKEBOX_SELECTION				   = 1038,
+		SHUTTLE_BEACON					   = 1039,
+		FIELD_FACTION_CHANGE			   = 1040,
+		GOTO_LIST			   = 1041
 	};
 };
 

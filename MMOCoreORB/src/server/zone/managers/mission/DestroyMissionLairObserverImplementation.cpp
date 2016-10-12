@@ -1,8 +1,8 @@
 
 #include "server/zone/managers/mission/DestroyMissionLairObserver.h"
-#include "server/zone/templates/mobile/LairTemplate.h"
+#include "templates/mobile/LairTemplate.h"
 #include "server/zone/managers/creature/HealLairObserverEvent.h"
-#include "server/zone/templates/mobile/CreatureTemplate.h"
+#include "server/zone/objects/creature/ai/CreatureTemplate.h"
 #include "server/zone/managers/creature/CreatureManager.h"
 #include "server/zone/managers/creature/CreatureTemplateManager.h"
 #include "server/zone/objects/creature/ai/Creature.h"
@@ -112,6 +112,8 @@ bool DestroyMissionLairObserverImplementation::checkForNewSpawns(TangibleObject*
 		}
 	}
 
+	uint32 lairTemplateCRC = getLairTemplateName().hashCode();
+
 	for(int i = 0; i < objectsToSpawn.size(); ++i) {
 
 		if (spawnNumber != 4 && spawnedCreatures.size() >= spawnLimit)
@@ -161,6 +163,7 @@ bool DestroyMissionLairObserverImplementation::checkForNewSpawns(TangibleObject*
 				ai->setHomeLocation(x, z, y);
 				ai->setRespawnTimer(0);
 				ai->setHomeObject(lair);
+				ai->setLairTemplateCRC(lairTemplateCRC);
 
 				spawnedCreatures.add(creo);
 

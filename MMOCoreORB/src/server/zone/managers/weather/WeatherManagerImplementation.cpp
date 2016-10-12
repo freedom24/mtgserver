@@ -9,11 +9,10 @@
 
 #include "server/zone/managers/weather/WeatherManager.h"
 #include "server/zone/Zone.h"
-#include "server/chat/ChatManager.h"
 #include "events/WeatherChangeEvent.h"
 #include "server/zone/objects/creature/CreatureObject.h"
-#include "server/zone/objects/creature/CreatureAttribute.h"
-#include "server/zone/objects/creature/CreaturePosture.h"
+#include "templates/params/creature/CreatureAttribute.h"
+#include "templates/params/creature/CreaturePosture.h"
 #include "server/zone/objects/player/PlayerObject.h"
 #include "weathermaps/WeatherMap.h"
 #include "server/zone/packets/scene/ServerWeatherMessage.h"

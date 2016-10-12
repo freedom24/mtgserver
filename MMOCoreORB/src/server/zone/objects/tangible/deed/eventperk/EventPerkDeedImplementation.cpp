@@ -6,11 +6,12 @@
 #include "server/zone/objects/creature/CreatureObject.h"
 #include "server/zone/objects/region/CityRegion.h"
 #include "server/zone/objects/area/ActiveArea.h"
-#include "server/zone/templates/tangible/EventPerkDeedTemplate.h"
+#include "server/zone/objects/structure/StructureObject.h"
+#include "templates/tangible/EventPerkDeedTemplate.h"
 #include "server/zone/packets/object/ObjectMenuResponse.h"
 #include "server/zone/managers/planet/PlanetManager.h"
 #include "server/zone/managers/structure/StructureManager.h"
-#include "server/zone/managers/terrain/TerrainManager.h"
+#include "terrain/manager/TerrainManager.h"
 #include "server/zone/managers/name/NameManager.h"
 #include "server/zone/managers/creature/CreatureManager.h"
 
@@ -27,6 +28,7 @@ void EventPerkDeedImplementation::loadTemplateData(SharedObjectTemplate* templat
 	if (deedData == NULL)
 		return;
 
+	generatedTimeToLive = deedData->getGeneratedTimeToLive();
 	perkType = deedData->getPerkType();
 }
 
@@ -126,7 +128,9 @@ int EventPerkDeedImplementation::handleObjectMenuSelect(CreatureObject* player, 
 		CloseObjectsVector* vec = (CloseObjectsVector*) player->getCloseObjects();
 
 		if (vec == NULL) {
+#ifdef COV_DEBUG
 			error("Player has NULL closeObjectsVector in EventPerkDeedImplementation::handleObjectMenuSelect");
+#endif
 			return 1;
 		}
 
@@ -226,7 +230,24 @@ int EventPerkDeedImplementation::handleObjectMenuSelect(CreatureObject* player, 
 		object->createChildObjects();
 		parseChildObjects(object);
 
+		// object/tangible/event_perk/race_droid.iff
+		// Values stored using setLuaStringData because the perk is handled from lua
+		if (object->getServerObjectCRC() == 0x785C60BF) {
+			object->setLuaStringData("ownerID", String::valueOf(player->getObjectID()));
+		}
+
 		generated = true;
+
+		if (removeEventPerkDeedTask != NULL && generatedTimeToLive > 0) {
+			Time currentTime;
+			uint64 timeDelta = currentTime.getMiliTime() - purchaseTime.getMiliTime();
+
+			if (timeDelta >= generatedTimeToLive)
+				removeEventPerkDeedTask->execute();
+			else
+				removeEventPerkDeedTask->reschedule(generatedTimeToLive - timeDelta);
+		}
+
 		destroyObjectFromWorld(true);
 
 		return 0;
@@ -313,16 +334,21 @@ void EventPerkDeedImplementation::destroyObjectFromDatabase(bool destroyContaine
 }
 
 void EventPerkDeedImplementation::activateRemoveEvent(bool immediate) {
+	uint64 timeToLive = EventPerkDeedTemplate::TIME_TO_LIVE;
+
+	if (generated && generatedTimeToLive > 0)
+		timeToLive = generatedTimeToLive;
+
 	if (removeEventPerkDeedTask == NULL) {
 		removeEventPerkDeedTask = new RemoveEventPerkDeedTask(_this.getReferenceUnsafeStaticCast());
 
 		Time currentTime;
 		uint64 timeDelta = currentTime.getMiliTime() - purchaseTime.getMiliTime();
 
-		if (timeDelta >= EventPerkDeedTemplate::TIME_TO_LIVE || immediate) {
+		if (timeDelta >= timeToLive || immediate) {
 			removeEventPerkDeedTask->execute();
 		} else {
-			removeEventPerkDeedTask->schedule(EventPerkDeedTemplate::TIME_TO_LIVE - timeDelta);
+			removeEventPerkDeedTask->schedule(timeToLive - timeDelta);
 		}
 	} else if (immediate) {
 		if (removeEventPerkDeedTask->isScheduled()) {
@@ -334,7 +360,6 @@ void EventPerkDeedImplementation::activateRemoveEvent(bool immediate) {
 }
 
 String EventPerkDeedImplementation::getDurationString() {
-
 	Time currentTime;
 	uint32 timeDelta = currentTime.getMiliTime() - purchaseTime.getMiliTime();
 	uint32 timestamp = (EventPerkDeedTemplate::TIME_TO_LIVE - timeDelta) / 1000;

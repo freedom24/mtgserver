@@ -11,7 +11,6 @@
 #include "server/zone/objects/waypoint/WaypointObject.h"
 #include "server/zone/Zone.h"
 #include "server/zone/ZoneServer.h"
-#include "server/zone/managers/object/ObjectManager.h"
 #include "server/zone/managers/mission/MissionManager.h"
 #include "server/zone/managers/creature/CreatureManager.h"
 #include "server/zone/managers/planet/PlanetManager.h"
@@ -21,7 +20,7 @@
 #include "server/zone/objects/tangible/weapon/WeaponObject.h"
 #include "server/zone/objects/tangible/LairObject.h"
 #include "server/zone/managers/collision/CollisionManager.h"
-#include "server/zone/templates/mobile/LairTemplate.h"
+#include "templates/mobile/LairTemplate.h"
 #include "server/zone/managers/creature/CreatureTemplateManager.h"
 #include "server/zone/managers/mission/DestroyMissionLairObserver.h"
 

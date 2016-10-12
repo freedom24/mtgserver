@@ -30,14 +30,12 @@ Series legend:
 ]]
 
 TheaterManagerScreenPlay = ScreenPlay:new {
-	numberOfActs = 1,
 	screenplayName = "TheaterManagerScreenPlay",
 
 	enabled = 1,
 
 	-- Number of promotions required for each promotional phase (strings match values 10, 20, 30)
-	--requiredPromotions = { 10, 20, 30 },
-	requiredPromotions = { 2, 2, 2 },
+	requiredPromotions = { 10, 20, 30 },
 
 	-- Time in miliseconds between steps of audition
 	auditionHeartbeat = 15 * 1000, -- 15 seconds
@@ -46,8 +44,7 @@ TheaterManagerScreenPlay = ScreenPlay:new {
 	performanceHeartbeat = 15 * 1000, -- 15 seconds
 
 	-- Time before player can re-attempt a step, strings match 24 hours. This value is in seconds not miliseconds
-	--failureTimerReset = 24 * 60 * 60, -- 24 hours
-	failureTimerReset = 5 * 60, -- 5 minutes for testing
+	failureTimerReset = 24 * 60 * 60, -- 24 hours
 
 	-- List of performances used by auditions and performances
 	songs = { "ballad", "ceremonial", "folk", "jazz", "rock", "starwars1", "starwars2", "starwars3", "virtuoso", "waltz" },
@@ -527,35 +524,39 @@ function TheaterManagerScreenPlay:getExpectedPerformance(pPlayer, type)
 		return nil
 	end
 
-	return ObjectManager.withCreatureAndPlayerObject(pPlayer, function(player, playerObject)
-		local performance, currentPerformance
-		if (player:isDancing() or player:isPlayingMusic()) then
-			currentPerformance = player:getPerformanceName()
-		end
-		if (type == 1) then
-			while performance == nil do
-				local performanceName = self.dances[getRandomNumber(#self.dances)]
+	local pGhost = CreatureObject(pPlayer):getPlayerObject()
 
-				if (playerObject:hasAbility("startDance+" .. performanceName) and (currentPerformance == nil or performanceName ~= currentPerformance)) then
-					performance = self:getPerformanceKey(1, performanceName)
-				end
+	if (pGhost == nil) then
+		return nil
+	end
+
+	local performance, currentPerformance
+	if (CreatureObject(pPlayer):isDancing() or CreatureObject(pPlayer):isPlayingMusic()) then
+		currentPerformance = player:getPerformanceName()
+	end
+	if (type == 1) then
+		while performance == nil do
+			local performanceName = self.dances[getRandomNumber(#self.dances)]
+
+			if (playerObject:hasAbility("startDance+" .. performanceName) and (currentPerformance == nil or performanceName ~= currentPerformance)) then
+				performance = self:getPerformanceKey(1, performanceName)
 			end
-			return performance
-		elseif (type == 2) then
-			while performance == nil do
-				local performanceName = self.songs[getRandomNumber(#self.songs)]
-				if (playerObject:hasAbility("startMusic+" .. performanceName) and (currentPerformance == nil or performanceName ~= currentPerformance)) then
-					performance = self:getPerformanceKey(2, performanceName)
-				end
-			end
-			return performance
-		elseif (type == 3) then
-			return getRandomNumber(self.flourishes)
-		else
-			printf("Invalid audition type in TheaterManagerScreenPlay:getExpectedPerformance() \n")
-			return 0
 		end
-	end)
+		return performance
+	elseif (type == 2) then
+		while performance == nil do
+			local performanceName = self.songs[getRandomNumber(#self.songs)]
+			if (PlayerObject(pGhost):hasAbility("startMusic+" .. performanceName) and (currentPerformance == nil or performanceName ~= currentPerformance)) then
+				performance = self:getPerformanceKey(2, performanceName)
+			end
+		end
+		return performance
+	elseif (type == 3) then
+		return getRandomNumber(self.flourishes)
+	else
+		printf("Invalid audition type in TheaterManagerScreenPlay:getExpectedPerformance() \n")
+		return 0
+	end
 end
 
 -- Checks if the player is a valid entertainer capable of talking to the theater manager
@@ -816,6 +817,27 @@ function TheaterManagerScreenPlay:startPromotion(pPlayer)
 	end
 end
 
+function TheaterManagerScreenPlay:recreatePromotionObservers(pPlayer)
+	if (pPlayer == nil) then
+		return
+	end
+
+	dropObserver(WASWATCHED, pPlayer)
+	dropObserver(WASLISTENEDTO, pPlayer)
+
+	local series = self:getCurrentSeries(pPlayer)
+
+	if (series == 0) then
+		return
+	end
+
+	if (series == 2) then
+		createObserver(WASLISTENEDTO, "TheaterManagerScreenPlay", "notifyPromotionObserver", pPlayer, 1)
+	elseif (series == 1) then
+		createObserver(WASWATCHED, "TheaterManagerScreenPlay", "notifyPromotionObserver", pPlayer, 1)
+	end
+end
+
 -- Gets the required promotions for the player's current step
 function TheaterManagerScreenPlay:getRequiredPromotions(step)
 	if (step == 5) then
@@ -852,8 +874,12 @@ end
 
 -- Observer function triggered by someone watching the player perform
 function TheaterManagerScreenPlay:notifyPromotionObserver(pPlayer, pEntertained)
-	if (pPlayer == nil or pEntertained == nil) then
+	if (pPlayer == nil) then
 		return 1
+	end
+
+	if (pEntertained == nil) then
+		return 0
 	end
 
 	local currentStep = self:getCurrentStep(pPlayer)

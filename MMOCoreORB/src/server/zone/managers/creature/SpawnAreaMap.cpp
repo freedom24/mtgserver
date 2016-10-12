@@ -11,7 +11,7 @@
 #include "server/zone/objects/creature/CreatureObject.h"
 #include "server/zone/objects/creature/ai/AiAgent.h"
 #include "server/zone/objects/creature/junkdealer/JunkdealerCreature.h"
-#include "server/conf/ConfigManager.h"
+#include "conf/ConfigManager.h"
 #include "server/zone/objects/area/areashapes/CircularAreaShape.h"
 #include "server/zone/objects/area/areashapes/RectangularAreaShape.h"
 #include "server/zone/objects/area/areashapes/RingAreaShape.h"
@@ -25,43 +25,7 @@ void SpawnAreaMap::loadMap(Zone* z) {
 	lua->init();
 
 	try {
-		lua->runFile("scripts/managers/spawn_manager/" + planetName + ".lua");
-
-		LuaObject obj = lua->getGlobalObject(planetName + "_regions");
-
-		if (obj.isValidTable()) {
-			info("loading spawn areas...", true);
-
-			lua_State* s = obj.getLuaState();
-
-			for (int i = 1; i <= obj.getTableSize(); ++i) {
-				lua_rawgeti(s, -1, i);
-				LuaObject areaObj(s);
-
-				if (areaObj.isValidTable()) {
-					readAreaObject(areaObj);
-				}
-
-				areaObj.pop();
-			}
-		}
-
-		obj.pop();
-
-		for (int i = 0; i < size(); ++i) {
-			SpawnArea* area = get(i);
-
-			Locker locker(area);
-
-			for (int j = 0; j < noSpawnAreas.size(); ++j) {
-				SpawnArea* notHere = noSpawnAreas.get(j);
-
-				if (area->intersectsWith(notHere)) {
-					area->addNoSpawnArea(notHere);
-				}
-			}
-		}
-
+		loadRegions();
 		loadStaticSpawns();
 	} catch (Exception& e) {
 		error(e.getMessage());
@@ -73,8 +37,51 @@ void SpawnAreaMap::loadMap(Zone* z) {
 	lua = NULL;
 }
 
+void SpawnAreaMap::loadRegions() {
+	String planetName = zone->getZoneName();
+
+	lua->runFile("scripts/managers/spawn_manager/" + planetName + "_regions.lua");
+
+	LuaObject obj = lua->getGlobalObject(planetName + "_regions");
+
+	if (obj.isValidTable()) {
+		info("loading spawn areas...", true);
+
+		lua_State* s = obj.getLuaState();
+
+		for (int i = 1; i <= obj.getTableSize(); ++i) {
+			lua_rawgeti(s, -1, i);
+			LuaObject areaObj(s);
+
+			if (areaObj.isValidTable()) {
+				readAreaObject(areaObj);
+			}
+
+			areaObj.pop();
+		}
+	}
+
+	obj.pop();
+
+	for (int i = 0; i < size(); ++i) {
+		SpawnArea* area = get(i);
+
+		Locker locker(area);
+
+		for (int j = 0; j < noSpawnAreas.size(); ++j) {
+			SpawnArea* notHere = noSpawnAreas.get(j);
+
+			if (area->intersectsWith(notHere)) {
+				area->addNoSpawnArea(notHere);
+			}
+		}
+	}
+}
+
 void SpawnAreaMap::loadStaticSpawns() {
 	String planetName = zone->getZoneName();
+
+	lua->runFile("scripts/managers/spawn_manager/" + planetName + "_static_spawns.lua");
 
 	LuaObject obj = lua->getGlobalObject(planetName + "_static_spawns");
 
@@ -129,11 +136,13 @@ void SpawnAreaMap::loadStaticSpawns() {
 				Locker objLocker(creatureObject);
 
 				creatureObject->setDirection(Math::deg2rad(heading));
-				
-				if (creatureObject->isJunkDealer()){
-					cast<JunkdealerCreature*>(creatureObject.get())->setJunkDealerConversationType(junkDealerConversationType);
-					cast<JunkdealerCreature*>(creatureObject.get())->setJunkDealerBuyerType(junkDealerBuyingType);
+
+				if (creatureObject->isJunkDealer()) {
+					JunkdealerCreature* jdc = creatureObject.castTo<JunkdealerCreature*>();
+					jdc->setJunkDealerConversationType(junkDealerConversationType);
+					jdc->setJunkDealerBuyerType(junkDealerBuyingType);
 				}
+
 				if (!moodString.isEmpty()) {
 					creatureObject->setMoodString(moodString);
 
@@ -295,4 +304,20 @@ void SpawnAreaMap::readAreaObject(LuaObject& areaObj) {
 		area->setNoBuildArea(true);
 	}
 
+}
+
+void SpawnAreaMap::unloadMap() {
+	noSpawnAreas.removeAll();
+	worldSpawnAreas.removeAll();
+
+	for (int i = 0; i < size(); i++) {
+		SpawnArea* area = get(i);
+
+		if (area != NULL) {
+			Locker locker(area);
+			area->destroyObjectFromWorld(false);
+		}
+	}
+
+	removeAll();
 }

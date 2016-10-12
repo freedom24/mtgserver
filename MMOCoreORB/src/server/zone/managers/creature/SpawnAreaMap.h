@@ -24,6 +24,7 @@ protected:
 	Vector<ManagedReference<SpawnArea*> > worldSpawnAreas;
 
 	void readAreaObject(LuaObject& areaObj);
+	void loadRegions();
 	void loadStaticSpawns();
 
 public:
@@ -33,6 +34,7 @@ public:
 		SPAWNAREA           = 0x00000001,
 		NOSPAWNAREA         = 0x00000002,
 		WORLDSPAWNAREA      = 0x00000010,
+		NOWORLDSPAWNAREA    = 0x00000020,
 		NOBUILDZONEAREA     = 0x00000100
 	};
 
@@ -55,6 +57,8 @@ public:
 	}
 
 	void loadMap(Zone* z);
+
+	void unloadMap();
 
 	Vector<ManagedReference<SpawnArea*> >* getWorldSpawnAreas() {
 		return &worldSpawnAreas;

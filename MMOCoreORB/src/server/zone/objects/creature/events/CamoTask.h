@@ -12,7 +12,9 @@
 #include "engine/core/ManagedReference.h"
 #include "engine/core/ManagedWeakReference.h"
 #include "system/lang/String.h"
+#include "server/zone/managers/player/PlayerManager.h"
 #include "server/zone/objects/creature/CreatureObject.h"
+#include "server/zone/objects/creature/buffs/ConcealBuff.h"
 
 class CamoTask : public Task {
 	ManagedWeakReference<CreatureObject*> creo;
@@ -63,19 +65,35 @@ public:
 		if (creature->getPlayerObject() == NULL)
 			return;
 
-		if (!maskScent && !creature->hasSkill("outdoors_ranger_novice"))
-			return;
-
 		if (maskScent) {
 			StringIdChatParameter success("skl_use", "sys_scentmask_success");
-			success.setTT(target);
+			success.setTT(target->getObjectID());
 
 			creature->sendSystemMessage(success);
 		}
 
 		if (awardXp) {
 			ManagedReference<PlayerManager*> playerManager = creature->getZoneServer()->getPlayerManager();
-			playerManager->awardExperience(creature, "scout", (target->getLevel() * 2), true);
+
+			if (maskScent) {
+				playerManager->awardExperience(creature, "scout", (target->getLevel() * 2), true);
+			}
+			else {
+				ConcealBuff* buff = cast<ConcealBuff*>(creature->getBuff(crc));
+				if (buff != NULL) {
+					clocker.release();
+					locker.release();
+
+					ManagedReference<CreatureObject*> buffGiver = buff->getBuffGiver();
+					if (buffGiver != NULL) {
+						Locker buffGiverlocker(buffGiver);
+						if (buffGiver->hasSkill("outdoors_ranger_novice")) {
+							playerManager->awardExperience(buffGiver, "scout", (target->getLevel() * 2), true);
+						}
+					}
+				}
+			}
+
 		}
 	}
 };

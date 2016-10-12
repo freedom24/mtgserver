@@ -23,8 +23,8 @@ hero_of_tat_bh = Creature:new {
 	tamingChance = 0,
 	ferocity = 0,
 	pvpBitmask = ATTACKABLE,
-	optionsBitmask = 136,
-	creatureBitmask = PACK,
+	optionsBitmask = AIENABLED + CONVERSABLE,
+	creatureBitmask = NONE,
 	diet = HERBIVORE,
 
 	templates = {"object/mobile/dressed_quest_liar_bh.iff"},

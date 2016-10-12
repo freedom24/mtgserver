@@ -12,13 +12,12 @@
 #include "server/zone/packets/object/ObjectMenuResponse.h"
 #include "server/zone/objects/scene/SceneObject.h"
 #include "server/zone/objects/tangible/TangibleObject.h"
-#include "server/zone/managers/player/PlayerManager.h"
 #include "server/zone/objects/player/sui/banktransferbox/SuiBankTransferBox.h"
 #include "server/zone/objects/player/sui/callbacks/BankTerminalSuiCallback.h"
 #include "server/zone/Zone.h"
 #include "server/zone/objects/region/CityRegion.h"
 
-void BankTerminalMenuComponent::fillObjectMenuResponse(SceneObject* sceneObject, ObjectMenuResponse* menuResponse, CreatureObject* creature) {
+void BankTerminalMenuComponent::fillObjectMenuResponse(SceneObject* sceneObject, ObjectMenuResponse* menuResponse, CreatureObject* creature) const {
 
 	ManagedReference<PlayerObject*> ghost = creature->getPlayerObject();
 
@@ -58,7 +57,7 @@ void BankTerminalMenuComponent::fillObjectMenuResponse(SceneObject* sceneObject,
 	TangibleObjectMenuComponent::fillObjectMenuResponse(sceneObject, menuResponse, creature);
 }
 
-int BankTerminalMenuComponent::handleObjectMenuSelect(SceneObject* sceneObject, CreatureObject* creature, byte selectedID) {
+int BankTerminalMenuComponent::handleObjectMenuSelect(SceneObject* sceneObject, CreatureObject* creature, byte selectedID) const {
 	if (!sceneObject->isTangibleObject())
 		return 0;
 

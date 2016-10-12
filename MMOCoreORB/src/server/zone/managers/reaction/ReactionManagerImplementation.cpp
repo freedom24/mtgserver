@@ -5,7 +5,7 @@
 #include "server/zone/managers/reaction/ReactionManager.h"
 #include "server/zone/objects/creature/CreatureObject.h"
 #include "server/zone/objects/creature/ai/DroidObject.h"
-#include "server/zone/objects/creature/CreatureAttribute.h"
+#include "templates/params/creature/CreatureAttribute.h"
 #include "server/zone/objects/creature/ai/AiAgent.h"
 #include "server/zone/objects/player/PlayerObject.h"
 #include "server/zone/objects/player/sui/messagebox/SuiMessageBox.h"
@@ -95,6 +95,9 @@ void ReactionManagerImplementation::loadLuaConfig() {
 	}
 
 	info("Loaded " + String::valueOf(emoteReactionFines.size()) + " emote reaction records.", true);
+
+	delete lua;
+	lua = NULL;
 }
 
 void ReactionManagerImplementation::sendChatReaction(AiAgent* npc, int type, int state, bool force) {
@@ -198,7 +201,7 @@ void ReactionManagerImplementation::sendChatReaction(AiAgent* npc, int type, int
 		message << ":" << typeString << num;
 		StringIdChatParameter chat;
 		chat.setStringId(message.toString());
-		zoneServer->getChatManager()->broadcastMessage(npc,chat,0,0,0);
+		zoneServer->getChatManager()->broadcastChatMessage(npc,chat,0,0,0);
 
 		npc->getCooldownTimerMap()->updateToCurrentAndAddMili("reaction_chat", 60000); // 60 second cooldown
 	}
@@ -265,7 +268,7 @@ void ReactionManagerImplementation::emoteReaction(CreatureObject* emoteUser, AiA
 	if (randomQuip != -1) {
 		StringIdChatParameter param(getReactionQuip(randomQuip));
 		param.setTT(emoteUser->getObjectID());
-		chatManager->broadcastMessage(emoteTarget, param, 0, 0, 0);
+		chatManager->broadcastChatMessage(emoteTarget, param, 0, 0, 0);
 	}
 
 	if (reactionFine->getFactionFine() != 0)
@@ -386,18 +389,13 @@ void ReactionManagerImplementation::doKnockdown(CreatureObject* victim, AiAgent*
 	else
 		knockdownAnim = "attack_high_center_light_0";
 
-	// TODO: Get knockdown animation working
-	//
 
 	victim->inflictDamage(attacker, CreatureAttribute::MIND, victim->getHAM(CreatureAttribute::MIND) + 200, true, true, true);
 
-	victim->setPosture(CreaturePosture::KNOCKEDDOWN, false, false); // set posture and don't update client
+
+	victim->updatePostures(); // set posture, don't send posture message, but send DeltaCreo3
 
 	attacker->doCombatAnimation(victim, knockdownAnim.hashCode(), HIT, 0xFF); // play attacker animation - This will update the victim's posture on the client
-
-	victim->doCombatAnimation(STRING_HASHCODE("change_posture")); // force defender to change posture after attack animation has completed
-
-
 }
 
 void ReactionManagerImplementation::doReactionFineMailCheck(CreatureObject* player) {

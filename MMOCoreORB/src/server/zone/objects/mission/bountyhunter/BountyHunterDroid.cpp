@@ -74,7 +74,7 @@ Reference<FindTargetTask*> BountyHunterDroid::findTarget(SceneObject* droidObjec
 
 	TangibleObject* tano = cast<TangibleObject*>(droidObject);
 	if(tano != NULL){
-		tano->setUseCount(tano->getUseCount() - 1, true);
+		tano->decreaseUseCount();
 	} else {
 		droidObject->destroyObjectFromWorld(true);
 		droidObject->destroyObjectFromDatabase(true);
@@ -106,7 +106,7 @@ Reference<CallArakydTask*> BountyHunterDroid::callArakydDroid(SceneObject* droid
 		return NULL;
 	}
 
-	Vector<ManagedReference<ActiveArea*> >* areas = player->getActiveAreas();
+	SortedVector<ManagedReference<ActiveArea*> >* areas = player->getActiveAreas();
 	for (int i = 0; i < areas->size(); i++) {
 		if (areas->get(i)->isMunicipalZone()) {
 			player->sendSystemMessage("@mission/mission_generic:probe_droid_bad_location"); // You must move to a different area to call down a probe droid from orbit.
@@ -136,7 +136,7 @@ Reference<CallArakydTask*> BountyHunterDroid::callArakydDroid(SceneObject* droid
 	TangibleObject* tano = cast<TangibleObject*>(droidObject);
 
 	if(tano != NULL){
-		tano->setUseCount(tano->getUseCount() - 1, true);
+		tano->decreaseUseCount();
 	} else {
 		droidObject->destroyObjectFromWorld(true);
 		droidObject->destroyObjectFromDatabase(true);

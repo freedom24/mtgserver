@@ -23,8 +23,8 @@ include server.zone.objects.scene.WorldCoordinates;
 import engine.core.ManagedObject;
 import server.zone.objects.tangible.TangibleObject;
 import server.zone.objects.tangible.weapon.WeaponObject;
-import server.zone.templates.SharedObjectTemplate;
-import server.zone.templates.mobile.CreatureTemplate;
+include templates.SharedObjectTemplate;
+import server.zone.objects.creature.ai.CreatureTemplate;
 import server.zone.objects.creature.events.DespawnCreatureOnPlayerDissappear;
 include server.zone.objects.creature.ai.variables.CreatureAttackMap;
 import engine.util.u3d.Coordinate;
@@ -39,11 +39,12 @@ include system.thread.ReadWriteLock;
 include server.zone.objects.creature.ai.variables.CurrentFoundPath;
 import server.zone.objects.creature.ai.bt.Behavior;
 import server.zone.objects.creature.ai.bt.CompositeBehavior;
-include server.zone.templates.AiTemplate;
+include templates.AiTemplate;
 import server.zone.objects.intangible.ControlDevice;
 import server.zone.objects.creature.ai.events.AiTrackingTask;
 import system.thread.atomic.AtomicInteger;
 include server.zone.objects.tangible.deed.pet.PetDeed;
+include server.zone.objects.cell.CellObject;
 
 @mock
 class AiAgent extends CreatureObject {
@@ -74,7 +75,7 @@ class AiAgent extends CreatureObject {
 	protected PatrolPoint nextStepPosition;
 
 	protected transient CurrentFoundPath currentFoundPath;
-	protected transient SceneObject targetCellObject;
+	protected transient CellObject targetCellObject;
 
 	protected WeaponObject readyWeapon;
 
@@ -137,6 +138,7 @@ class AiAgent extends CreatureObject {
 
 	@dereferenced
 	protected transient string templateName;
+	protected unsigned int lairTemplateCRC;
 	protected unsigned int creatureBitmask;
 
 	protected int waitTime;
@@ -191,6 +193,7 @@ class AiAgent extends CreatureObject {
 		waitTime = 0;
 		waiting = false;
 		fleeRange = 192;
+		lairTemplateCRC = 0;
 	}
 
 	/**
@@ -354,9 +357,9 @@ class AiAgent extends CreatureObject {
 	@dirty
 	public native void fillAttributeList(AttributeListMessage msg, CreatureObject object);
 
-	public native void setNextPosition(float x, float z, float y, SceneObject cell = null);
+	public native void setNextPosition(float x, float z, float y, CellObject cell = null);
 
-	public native void setNextStepPosition(float x, float z, float y, SceneObject cell = null);
+	public native void setNextStepPosition(float x, float z, float y, CellObject cell = null);
 
 	@dirty
 	public native void notifyPositionUpdate(QuadTreeEntry entry);
@@ -497,6 +500,8 @@ class AiAgent extends CreatureObject {
 	@preLocked
 	public void destroyObjectFromWorld(boolean sendSelfDestroy) {
 		super.destroyObjectFromWorld(sendSelfDestroy);
+		
+		numberOfPlayersInRange.set(0);
 
 		if (moveEvent != null) {
 			moveEvent.clearCreatureObject();
@@ -593,7 +598,7 @@ class AiAgent extends CreatureObject {
 	}
 
 	@preLocked
-	public void setHomeLocation(float x, float z, float y, SceneObject cell = null) {
+	public void setHomeLocation(float x, float z, float y, CellObject cell = null) {
 		homeLocation.setPosition(x, z, y);
 		homeLocation.setCell(cell);
 		homeLocation.setReached(true);
@@ -615,9 +620,9 @@ class AiAgent extends CreatureObject {
 	}
 
 	/**
-	 * Evaluates if this can be attacket by object
-	 * @pre { this object is locked }
-	 * @post { this object is locked }
+	 * Evaluates if this can be attacked by object
+	 * @pre { }
+	 * @post { }
 	 * @return returns true if object can attack this
 	 */
 	@dirty
@@ -1280,11 +1285,11 @@ class AiAgent extends CreatureObject {
 		return alertedTime;
 	}
 
-	public void incrementLuaCall(string key) {
+	public void incrementLuaCall(final string key) {
 		trackingTask.incrementCall(key);
 	}
 
-	public void addToLuaTime(string key, unsigned long val) {
+	public void addToLuaTime(final string key, unsigned long val) {
 		trackingTask.addTime(key, val);
 	}
 
@@ -1374,4 +1379,14 @@ class AiAgent extends CreatureObject {
 
 	@preLocked
 	public native void setConvoTemplate(final string templateString);
+
+	@preLocked
+	public void setLairTemplateCRC(unsigned int crc) {
+		lairTemplateCRC = crc;
+	}
+
+	@read
+	public unsigned int getLairTemplateCRC() {
+		return lairTemplateCRC;
+	}
 }

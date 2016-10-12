@@ -15,7 +15,6 @@
 #include "server/zone/packets/harvester/ResourceHarvesterActivatePageMessage.h"
 #include "server/zone/managers/resource/ResourceManager.h"
 #include "server/zone/objects/area/ActiveArea.h"
-#include "server/zone/templates/tangible/SharedStructureObjectTemplate.h"
 
 void HarvesterObjectImplementation::fillObjectMenuResponse(ObjectMenuResponse* menuResponse, CreatureObject* player) {
 	if (!isOnAdminList(player))
@@ -26,11 +25,11 @@ void HarvesterObjectImplementation::fillObjectMenuResponse(ObjectMenuResponse* m
 	menuResponse->addRadialMenuItemToRadialID(118, 78, 3, "@harvester:manage"); //Operate Machinery
 }
 
-void HarvesterObjectImplementation::synchronizedUIListen(SceneObject* player, int value) {
-	if (!player->isPlayerCreature() || !isOnAdminList(cast<CreatureObject*>(player)) || getZone() == NULL)
+void HarvesterObjectImplementation::synchronizedUIListen(CreatureObject* player, int value) {
+	if (!player->isPlayerCreature() || !isOnAdminList(player) || getZone() == NULL)
 		return;
 
-	addOperator(cast<CreatureObject*>(player));
+	addOperator(player);
 
 	updateInstallationWork();
 
@@ -43,7 +42,7 @@ void HarvesterObjectImplementation::synchronizedUIListen(SceneObject* player, in
 		ResourceContainer* container = resourceHopper.get(i);
 
 		if (container != NULL) {
-			container->sendTo(cast<CreatureObject*>(player), true);
+			container->sendTo(player, true);
 		}
 	}
 
@@ -55,11 +54,11 @@ void HarvesterObjectImplementation::updateOperators() {
 	broadcastToOperators(msg);
 }
 
-void HarvesterObjectImplementation::synchronizedUIStopListen(SceneObject* player, int value) {
+void HarvesterObjectImplementation::synchronizedUIStopListen(CreatureObject* player, int value) {
 	if (!player->isPlayerCreature())
 		return;
 
-	removeOperator(cast<CreatureObject*>(player));
+	removeOperator(player);
 }
 
 int HarvesterObjectImplementation::handleObjectMenuSelect(CreatureObject* player, byte selectedID) {
@@ -91,6 +90,16 @@ String HarvesterObjectImplementation::getRedeedMessage() {
 	if(getHopperSize() > 0)
 		return "destroy_empty_hopper";
 
-
 	return "";
+}
+
+
+void HarvesterObjectImplementation::fillAttributeList(AttributeListMessage* alm,
+		CreatureObject* object) {
+	InstallationObjectImplementation::fillAttributeList(alm, object);
+
+	if(isSelfPowered()){
+		alm->insertAttribute("@veteran_new:harvester_examine_title", "@veteran_new:harvester_examine_text");
+	}
+
 }

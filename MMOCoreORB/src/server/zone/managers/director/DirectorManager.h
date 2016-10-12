@@ -20,8 +20,9 @@ class ScreenPlayTask;
 
 namespace server {
 namespace zone {
-namespace templates {
-namespace mobile {
+namespace objects {
+namespace creature {
+namespace conversation {
 
 	class ConversationScreen;
 	class ConversationTemplate;
@@ -29,8 +30,9 @@ namespace mobile {
 }
 }
 }
+}
 
-using namespace server::zone::templates::mobile;
+using namespace server::zone::objects::creature::conversation;
 
 namespace server {
  namespace zone {
@@ -52,6 +54,8 @@ namespace server {
 
 	class DirectorManager : public Singleton<DirectorManager>, public Object, public Logger, public ReadWriteLock {
 		ThreadLocal<Lua*> localLua;
+		ThreadLocal<uint32*> localScreenPlayVersion;
+		AtomicInteger masterScreenPlayVersion;
 		VectorMap<String, bool> screenPlays;
 		SynchronizedVectorMap<String, Reference<QuestStatus*> > questStatuses;
 		SynchronizedVectorMap<String, Reference<QuestVectorMap*> > questVectorMaps;
@@ -71,11 +75,16 @@ namespace server {
 	public:
 		DirectorManager();
 
+		~DirectorManager() {
+			sharedMemory = NULL;
+		}
+
 		void loadPersistentEvents();
 		void loadPersistentStatus();
 
 		void startGlobalScreenPlays();
 		void startScreenPlay(CreatureObject* creatureObject, const String& screenPlayName);
+		void reloadScreenPlays();
 		void activateEvent(ScreenPlayTask* task);
 		ConversationScreen* getNextConversationScreen(const String& luaClass, ConversationTemplate* conversationTemplate, CreatureObject* conversingPlayer, int selectedOption, CreatureObject* conversingNPC);
 		ConversationScreen* runScreenHandlers(const String& luaClass, ConversationTemplate* conversationTemplate, CreatureObject* conversingPlayer, CreatureObject* conversingNPC, int selectedOption, ConversationScreen* conversationScreen);
@@ -87,6 +96,8 @@ namespace server {
 		QuestVectorMap* getQuestVectorMap(const String& keyString);
 		QuestVectorMap* createQuestVectorMap(const String& keyString);
 		void removeQuestVectorMap(const String& keyString);
+
+		String getStringSharedMemory(const String& key);
 
 		virtual Lua* getLuaInstance();
 		int runScreenPlays();
@@ -101,10 +112,12 @@ namespace server {
 		static int createEventActualTime(lua_State* L);
 		static int createServerEvent(lua_State* L);
 		static int hasServerEvent(lua_State* L);
+		static int rescheduleServerEvent(lua_State* L);
 		static int getServerEventID(lua_State* L);
 		static int getServerEventTimeLeft(lua_State* L);
 		static int createObserver(lua_State* L);
 		static int dropObserver(lua_State* L);
+		static int hasObserver(lua_State* L);
 		static int spawnMobile(lua_State* L);
 		static int spawnEventMobile(lua_State* L);
 		static int spawnSceneObject(lua_State* L);
@@ -166,6 +179,8 @@ namespace server {
 		static int getQuestStatus(lua_State* L);
 		static int removeQuestStatus(lua_State* L);
 		static int getControllingFaction(lua_State* L);
+		static int getImperialScore(lua_State* L);
+		static int getRebelScore(lua_State* L);
 		static int playClientEffectLoc(lua_State* L);
 		static int getQuestInfo(lua_State* L);
 		static int getPlayerQuestID(lua_State* L);

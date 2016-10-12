@@ -38,6 +38,12 @@ function SuiRadiationSensor:updateSensor(pCreature)
 		return
 	end
 
+	local pGhost = CreatureObject(pCreature):getPlayerObject()
+
+	if (pGhost == nil) then
+		return
+	end
+
 	local playerID = SceneObject(pCreature):getObjectID()
 	local sensorPid = readData(playerID .. ":radiationSensorPid")
 
@@ -45,11 +51,7 @@ function SuiRadiationSensor:updateSensor(pCreature)
 		return
 	end
 
-	local pBox
-
-	ObjectManager.withCreaturePlayerObject(pCreature, function(playerObject)
-		pBox = playerObject:getSuiBox(sensorPid)
-	end)
+	local pBox = PlayerObject(pGhost):getSuiBox(sensorPid)
 
 	if (pBox == nil) then
 		printf("Error in SuiRadiationSensor:updateSensor, suiBox is nil.\n")
@@ -158,9 +160,17 @@ function SuiRadiationSensor:giveSensor(pCreature)
 	end
 
 	local pSensor = giveItem(pDatapad, "object/intangible/data_item/data_geiger_counter.iff", -1)
-	writeData(SceneObject(pCreature):getObjectID() .. ":radiationSensorFactor", getRandomNumber(3,7))
 
-	CreatureObject(pCreature):sendSystemMessage("@system_msg:new_datapad_device")
+	if (pSensor ~= nil) then
+		writeData(SceneObject(pCreature):getObjectID() .. ":radiationSensorFactor", getRandomNumber(3,7))
+		CreatureObject(pCreature):sendSystemMessage("@system_msg:new_datapad_device")
+
+		SceneObject(pSensor):setContainerInheritPermissionsFromParent(false)
+		SceneObject(pSensor):clearContainerDefaultDenyPermission(MOVECONTAINER)
+		SceneObject(pSensor):setContainerDefaultAllowPermission(MOVECONTAINER)
+	else
+		CreatureObject(pCreature):sendSystemMessage("Error: Unable to create radiation sensor. Please bug report.")
+	end
 end
 
 function SuiRadiationSensor:removeSensor(pCreature)

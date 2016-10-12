@@ -8,7 +8,7 @@
 #ifndef SHIPUPDATETRANSFORMCALLBACK_H_
 #define SHIPUPDATETRANSFORMCALLBACK_H_
 
-#include "../MessageCallback.h"
+#include "server/zone/packets/MessageCallback.h"
 #include "engine/engine.h"
 #include "server/zone/objects/creature/CreatureObject.h"
 #include "server/zone/objects/player/PlayerObject.h"
@@ -88,12 +88,7 @@ public:
 		msg << "velA:" << velA << " velB:" << velB;
 		info(msg.toString(), true);*/
 
-		ManagedReference<SceneObject*> scene = client->getPlayer();
-
-		if (scene == NULL)
-			return;
-
-		CreatureObject* object = cast<CreatureObject*>(scene.get());
+		ManagedReference<CreatureObject*> object = client->getPlayer();
 
 		if (object == NULL)
 			return;
@@ -105,10 +100,10 @@ public:
 		if (ghost == NULL)
 			return;
 
-		if (isnan(positionX) || isnan(positionY) || isnan(positionZ))
+		if (std::isnan(positionX) || std::isnan(positionY) || std::isnan(positionZ))
 			return;
 
-		if (isinf(positionX) || isinf(positionY) || isinf(positionZ))
+		if (std::isinf(positionX) || std::isinf(positionY) || std::isinf(positionZ))
 			return;
 
 		if (ghost->isTeleporting())

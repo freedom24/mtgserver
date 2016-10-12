@@ -7,10 +7,10 @@
 #include "server/zone/objects/tangible/component/droid/DroidComponent.h"
 #include "server/zone/packets/object/ObjectMenuResponse.h"
 #include "server/zone/objects/group/GroupObject.h"
-#include "server/zone/objects/creature/CreatureAttribute.h"
+#include "templates/params/creature/CreatureAttribute.h"
 #include "server/zone/objects/player/PlayerObject.h"
 #include "server/zone/objects/creature/events/DroidTrapTask.h"
-#include "server/zone/templates/tangible/TrapTemplate.h"
+#include "templates/tangible/TrapTemplate.h"
 
 const String DroidTrapModuleDataComponent::EMPTY_TRAP_MESSAGE = "@pet/droid_modules:no_trap_loaded";
 DroidTrapModuleDataComponent::DroidTrapModuleDataComponent() {
@@ -196,38 +196,46 @@ void DroidTrapModuleDataComponent::handlePetCommand(String cmd, CreatureObject* 
 
 
 void DroidTrapModuleDataComponent::handleInsertTrap(CreatureObject* player, TangibleObject* input) {
-	// we need to send the invlid stimpack message just wher eis a good question
-	if (!player->hasSkill("outdoors_scout_novice") || !compatibleTrap(player,input->getServerObjectCRC()) ) {
+	if (input == NULL) {
+		return;
+	}
+
+	if (!player->hasSkill("outdoors_scout_novice") || !compatibleTrap(player, input->getServerObjectCRC()) ) {
 		player->sendSystemMessage("@pet/droid_modules:insufficient_skill");
 		return;
 	}
 
 	ManagedReference<DroidObject*> droid = getDroidObject();
-	Locker dlock(droid);
-	Locker crossLock(player,droid);
+
 	if (droid == NULL) {
 		return;
 	}
-	if (input == NULL) {
-		return;
-	}
+
+	Locker dlock(droid);
+	Locker crossLock(player, droid);
+
 	if(droid->getLinkedCreature().get() != player) {
 		return;
 	}
+
 	int loaded = 0;
 	if (trap != NULL) {
 		loaded = trap->getUseCount();
 	}
 
 	int allowed = (modules * 10) - loaded;
+
 	Locker locker(input);
+
 	// adding to existing trap
 	if (trap == NULL) {
 		// add the trap into the unit
 		ObjectManager* objectManager = ObjectManager::instance();
+
 		if (allowed > input->getUseCount()) {
 			// just clone it and set old one to 0 uses to destroy it so it transfer correctly as we dont store this directly in the droid
 			ManagedReference<TangibleObject*> protoclone = cast<TangibleObject*>( objectManager->cloneObject(input));
+
 			if (protoclone != NULL) {
 				Locker cloneLocker(protoclone);
 
@@ -238,7 +246,7 @@ void DroidTrapModuleDataComponent::handleInsertTrap(CreatureObject* player, Tang
 				protoclone->setParent(NULL);
 				protoclone->setUseCount(input->getUseCount());
 				trap = protoclone;
-				input->setUseCount(0);
+				input->decreaseUseCount(input->getUseCount());
 				StringIdChatParameter msg;
 				msg.setStringId("@pet/droid_modules:trap_module_initialize");
 				msg.setTU(trap->getObjectName()->getFullPath());
@@ -248,6 +256,7 @@ void DroidTrapModuleDataComponent::handleInsertTrap(CreatureObject* player, Tang
 		} else {
 			// should technically never happen as you cant experiment traps use count but someone might config base useCount > 10
 			ManagedReference<TangibleObject*> protoclone = cast<TangibleObject*>( objectManager->cloneObject(input));
+
 			if (protoclone != NULL) {
 				Locker cloneLocker(protoclone);
 
@@ -257,7 +266,7 @@ void DroidTrapModuleDataComponent::handleInsertTrap(CreatureObject* player, Tang
 
 				protoclone->setParent(NULL);
 				protoclone->setUseCount(allowed);
-				input->setUseCount(input->getUseCount() - allowed);
+				input->decreaseUseCount(allowed);
 				trap = protoclone;
 				StringIdChatParameter msg;
 				msg.setStringId("@pet/droid_modules:trap_module_initialize");
@@ -279,10 +288,10 @@ void DroidTrapModuleDataComponent::handleInsertTrap(CreatureObject* player, Tang
 
 				if (allowed > input->getUseCount()) {
 					trap->setUseCount(trap->getUseCount() + input->getUseCount());
-					input->setUseCount(0);
+					input->decreaseUseCount(input->getUseCount());
 				} else {
 					trap->setUseCount(trap->getUseCount() + allowed);
-					input->setUseCount(input->getUseCount() - allowed);
+					input->setUseCount(allowed);
 					player->sendSystemMessage("@pet/droid_modules:trap_max_reached");
 				}
 			}

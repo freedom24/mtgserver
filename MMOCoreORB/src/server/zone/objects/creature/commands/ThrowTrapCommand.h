@@ -7,7 +7,7 @@
 
 #include "server/zone/objects/scene/SceneObject.h"
 #include "server/zone/objects/creature/events/ThrowTrapTask.h"
-#include "server/zone/templates/tangible/TrapTemplate.h"
+#include "templates/tangible/TrapTemplate.h"
 
 class ThrowTrapCommand: public CombatQueueCommand {
 public:
@@ -80,7 +80,7 @@ public:
 			}
 
 			/// Check Range
-			if(creature->getDistanceTo(targetCreature) > trapData->getMaxRange())
+			if(!checkDistance(creature, targetCreature, trapData->getMaxRange()))
 			{
 				StringIdChatParameter tooFar("cmd_err", "target_range_prose");
 				tooFar.setTO("Throw Trap");

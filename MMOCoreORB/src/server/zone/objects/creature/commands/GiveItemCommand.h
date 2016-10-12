@@ -7,7 +7,6 @@
 
 #include "server/zone/objects/scene/SceneObject.h"
 #include "server/zone/managers/resource/ResourceManager.h"
-#include "server/zone/managers/player/PlayerManager.h"
 #include "server/zone/managers/creature/PetManager.h"
 #include "server/zone/objects/tangible/pharmaceutical/StimPack.h"
 
@@ -89,7 +88,7 @@ public:
 
 							UnicodeString message("@player_structure:wear_noway");
 							ChatManager* chatMan = server->getChatManager();
-							chatMan->broadcastMessage(vendor, message, object->getObjectID(), vendor->getMoodID(), 0);
+							chatMan->broadcastChatMessage(vendor, message, object->getObjectID(), vendor->getMoodID(), 0);
 							return GENERALERROR;
 						}
 

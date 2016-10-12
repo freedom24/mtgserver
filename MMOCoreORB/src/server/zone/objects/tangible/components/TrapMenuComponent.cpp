@@ -13,10 +13,8 @@
 #include "TrapMenuComponent.h"
 #include "server/zone/objects/scene/components/ObjectMenuComponent.h"
 #include "server/zone/packets/object/ObjectMenuResponse.h"
-#include "server/zone/templates/tangible/TrapTemplate.h"
-#include "server/zone/managers/objectcontroller/ObjectController.h"
 
-void TrapMenuComponent::fillObjectMenuResponse(SceneObject* sceneObject, ObjectMenuResponse* menuResponse, CreatureObject* player) {
+void TrapMenuComponent::fillObjectMenuResponse(SceneObject* sceneObject, ObjectMenuResponse* menuResponse, CreatureObject* player) const {
 
 	if (!sceneObject->isTangibleObject())
 		return;
@@ -46,16 +44,13 @@ void TrapMenuComponent::fillObjectMenuResponse(SceneObject* sceneObject, ObjectM
 	}
 }
 
-int TrapMenuComponent::handleObjectMenuSelect(SceneObject* sceneObject, CreatureObject* player, byte selectedID) {
+int TrapMenuComponent::handleObjectMenuSelect(SceneObject* sceneObject, CreatureObject* player, byte selectedID) const {
 
 	if(!sceneObject->isASubChildOf(player))
 		return 0;
 
 	if (!sceneObject->isTangibleObject())
 		return 0;
-
-	if (!sceneObject->isASubChildOf(player))
-			return 0;
 
 	if(selectedID == 20) {
 		player->sendCommand(STRING_HASHCODE("throwtrap"), String::valueOf(sceneObject->getObjectID()), player->getTargetID());

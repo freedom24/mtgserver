@@ -17,14 +17,14 @@
 #include "server/zone/packets/object/PlayClientEffectObjectMessage.h"
 #include "server/zone/packets/scene/PlayClientEffectLocMessage.h"
 #include "server/zone/objects/structure/StructureObject.h"
-#include "server/zone/templates/tangible/CampKitTemplate.h"
-#include "server/zone/templates/tangible/CampStructureTemplate.h"
+#include "templates/tangible/CampKitTemplate.h"
+#include "templates/building/CampStructureTemplate.h"
 #include "server/zone/objects/area/CampSiteActiveArea.h"
 #include "server/zone/objects/tangible/terminal/Terminal.h"
 #include "server/zone/objects/region/Region.h"
 
 void CampKitMenuComponent::fillObjectMenuResponse(SceneObject* sceneObject,
-		ObjectMenuResponse* menuResponse, CreatureObject* player) {
+		ObjectMenuResponse* menuResponse, CreatureObject* player) const {
 
 	if (!sceneObject->isCampKit())
 		return;
@@ -35,7 +35,7 @@ void CampKitMenuComponent::fillObjectMenuResponse(SceneObject* sceneObject,
 }
 
 int CampKitMenuComponent::handleObjectMenuSelect(SceneObject* sceneObject,
-		CreatureObject* player, byte selectedID) {
+		CreatureObject* player, byte selectedID) const {
 	if (!sceneObject->isTangibleObject())
 		return 0;
 

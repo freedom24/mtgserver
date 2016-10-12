@@ -24,12 +24,12 @@ public:
 	void run(CreatureObject* player, SuiBox* suiBox, uint32 eventIndex, Vector<UnicodeString>* args) {
 		bool cancelPressed = (eventIndex == 1);
 
-		if (cancelPressed || !suiBox->isListBox() || player == NULL)
+		if (cancelPressed || !suiBox->isMessageBox() || player == NULL)
 			return;
 
 		ManagedReference<SceneObject*> obj = suiBox->getUsingObject();
 
-		if(obj == NULL || !obj->isBuildingObject())
+		if (obj == NULL || !obj->isBuildingObject())
 			return;
 
 		ManagedReference<BuildingObject*> building = cast<BuildingObject*>(obj.get());
@@ -37,10 +37,10 @@ public:
 		GCWManager* gcwMan = player->getZone()->getGCWManager();
 
 
-		if(gcwMan==NULL)
+		if (gcwMan == NULL)
 			return;
 
-		gcwMan->removeDefense(building, player,deed);
+		gcwMan->removeDefense(building, player, deed);
 
 	}
 };

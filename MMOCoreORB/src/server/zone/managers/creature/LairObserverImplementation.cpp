@@ -4,20 +4,18 @@
  */
 
 #include "server/zone/managers/creature/LairObserver.h"
-#include "server/zone/objects/scene/ObserverEventType.h"
+#include "templates/params/ObserverEventType.h"
 #include "server/zone/objects/creature/ai/NonPlayerCreatureObject.h"
 #include "server/zone/objects/creature/ai/Creature.h"
 #include "server/zone/packets/object/PlayClientEffectObjectMessage.h"
 #include "server/zone/packets/scene/PlayClientEffectLocMessage.h"
-#include "server/zone/managers/player/PlayerManager.h"
 #include "server/zone/objects/tangible/weapon/WeaponObject.h"
 #include "server/zone/objects/tangible/threat/ThreatMap.h"
 #include "server/zone/Zone.h"
 #include "HealLairObserverEvent.h"
 #include "server/zone/managers/creature/CreatureManager.h"
-#include "server/zone/managers/templates/TemplateManager.h"
 #include "LairAggroTask.h"
-#include "server/zone/templates/mobile/CreatureTemplate.h"
+#include "server/zone/objects/creature/ai/CreatureTemplate.h"
 #include "server/zone/managers/creature/CreatureTemplateManager.h"
 #include "server/zone/managers/creature/DisseminateExperienceTask.h"
 
@@ -281,6 +279,8 @@ bool LairObserverImplementation::checkForNewSpawns(TangibleObject* lair, Tangibl
 		}
 	}
 
+	uint32 lairTemplateCRC = getLairTemplateName().hashCode();
+
 	for(int i = 0; i < objectsToSpawn.size(); ++i) {
 
 		if (spawnNumber != 4 && spawnedCreatures.size() >= lairTemplate->getSpawnLimit())
@@ -328,6 +328,7 @@ bool LairObserverImplementation::checkForNewSpawns(TangibleObject* lair, Tangibl
 				ai->setHomeLocation(x, z, y);
 				ai->setRespawnTimer(0);
 				ai->setHomeObject(lair);
+				ai->setLairTemplateCRC(lairTemplateCRC);
 
 				spawnedCreatures.add(creo);
 			}

@@ -2,7 +2,7 @@
 #include "server/zone/objects/tangible/components/FlagGameDataComponent.h"
 #include "server/zone/objects/tangible/components/EventPerkDataComponent.h"
 #include "server/zone/objects/tangible/components/EventPerkMenuComponent.h"
-#include "server/zone/templates/tangible/EventPerkDeedTemplate.h"
+#include "templates/tangible/EventPerkDeedTemplate.h"
 #include "server/zone/objects/tangible/deed/eventperk/EventPerkDeed.h"
 #include "server/zone/objects/tangible/eventperk/FlagGame.h"
 #include "server/zone/objects/player/PlayerObject.h"
@@ -10,7 +10,7 @@
 #include "server/zone/packets/object/ObjectMenuResponse.h"
 #include "server/chat/StringIdChatParameter.h"
 
-void FlagGameMenuComponent::fillObjectMenuResponse(SceneObject* sceneObject, ObjectMenuResponse* menuResponse, CreatureObject* player) {
+void FlagGameMenuComponent::fillObjectMenuResponse(SceneObject* sceneObject, ObjectMenuResponse* menuResponse, CreatureObject* player) const {
 	TangibleObjectMenuComponent::fillObjectMenuResponse(sceneObject, menuResponse, player);
 
 	FlagGameDataComponent* data = cast<FlagGameDataComponent*>(sceneObject->getDataObjectComponent()->get());
@@ -63,7 +63,7 @@ void FlagGameMenuComponent::fillObjectMenuResponse(SceneObject* sceneObject, Obj
 	}
 }
 
-int FlagGameMenuComponent::handleObjectMenuSelect(SceneObject* sceneObject, CreatureObject* player, byte selectedID) {
+int FlagGameMenuComponent::handleObjectMenuSelect(SceneObject* sceneObject, CreatureObject* player, byte selectedID) const {
 
 	FlagGameDataComponent* data = cast<FlagGameDataComponent*>(sceneObject->getDataObjectComponent()->get());
 

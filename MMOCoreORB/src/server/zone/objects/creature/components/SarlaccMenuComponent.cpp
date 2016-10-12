@@ -5,15 +5,14 @@
 #include "server/zone/objects/player/PlayerObject.h"
 #include "server/zone/objects/scene/components/ObjectMenuComponent.h"
 #include "server/zone/packets/object/ObjectMenuResponse.h"
-#include "server/zone/managers/objectcontroller/ObjectController.h"
 
-void SarlaccMenuComponent::fillObjectMenuResponse(SceneObject* sceneObject, ObjectMenuResponse* menuResponse, CreatureObject* player) {
+void SarlaccMenuComponent::fillObjectMenuResponse(SceneObject* sceneObject, ObjectMenuResponse* menuResponse, CreatureObject* player) const {
 	TangibleObjectMenuComponent::fillObjectMenuResponse(sceneObject, menuResponse, player);
 
 	menuResponse->addRadialMenuItem(20, 3, "@mob/sarlacc:extract_bile"); // Extract Bile
 }
 
-int SarlaccMenuComponent::handleObjectMenuSelect(SceneObject* sceneObject, CreatureObject* player, byte selectedID) {
+int SarlaccMenuComponent::handleObjectMenuSelect(SceneObject* sceneObject, CreatureObject* player, byte selectedID) const {
 	if (selectedID == 20) {
 		Locker plocker(player, sceneObject);
 

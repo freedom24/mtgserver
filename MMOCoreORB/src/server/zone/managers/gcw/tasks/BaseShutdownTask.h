@@ -7,20 +7,25 @@
 #include "server/zone/objects/player/sui/callbacks/BaseShutdownSuiCallback.h"
 
 class BaseShutdownTask : public Task {
-	ManagedReference<BuildingObject*> buildingObject;
-	ManagedReference<GCWManager*> gcwManager;
-	ManagedReference<CreatureObject*> player;
-	ManagedReference<SceneObject*> hqTerminal;
+	ManagedWeakReference<BuildingObject*> building;
+	ManagedWeakReference<GCWManager*> gcwMan;
+	ManagedWeakReference<CreatureObject*> play;
+	ManagedWeakReference<SceneObject*> terminal;
 
 public:
-	BaseShutdownTask(GCWManager* gcwMan, BuildingObject* building, CreatureObject* creature, SceneObject* term) {
-		gcwManager = gcwMan;
-		buildingObject = building;
-		hqTerminal = term;
-		player = creature;
+	BaseShutdownTask(GCWManager* gcwManager, BuildingObject* buildingObject, CreatureObject* creature, SceneObject* term) {
+		gcwMan = gcwManager;
+		building = buildingObject;
+		terminal = term;
+		play = creature;
 	}
 
 	void run() {
+		ManagedReference<BuildingObject*> buildingObject = building.get();
+		ManagedReference<GCWManager*> gcwManager = gcwMan.get();
+		ManagedReference<CreatureObject*> player = play.get();
+		ManagedReference<SceneObject*> hqTerminal = terminal.get();
+
 		if (gcwManager == NULL || buildingObject == NULL || hqTerminal == NULL || player == NULL)
 			return;
 
@@ -30,6 +35,8 @@ public:
 			return;
 
 		Locker locker(player);
+
+		player->removePendingTask("base_shutdown");
 
 		if (player->getParentID() == 0) {
 			player->sendSystemMessage("@hq:vulnerability_reset_no_longer_in_structure"); // You don't appear to be in the structure any longer. Aborting structure shutdown.
@@ -45,9 +52,26 @@ public:
 		if (ghost->hasSuiBoxWindowType(SuiWindowType::HQ_TERMINAL))
 			ghost->closeSuiWindowType(SuiWindowType::HQ_TERMINAL);
 
+		Observer* shutdownObserver = NULL;
+		SortedVector<ManagedReference<Observer* > > observers = player->getObservers(ObserverEventType::PARENTCHANGED);
+
+		for (int i = 0; i < observers.size(); i++) {
+			Observer* observer = observers.get(i);
+
+			if (observer->isObserverType(ObserverType::GCWBASESHUTDOWN)) {
+				shutdownObserver = observer;
+				break;
+			}
+		}
+
+		if (shutdownObserver != NULL) {
+			player->dropObserver(ObserverEventType::PARENTCHANGED, shutdownObserver);
+			player->dropObserver(ObserverEventType::OBJECTDESTRUCTION, shutdownObserver);
+		}
+
 		ManagedReference<SuiMessageBox*> suiMessageBox = new SuiMessageBox(player, SuiWindowType::HQ_TERMINAL);
-		suiMessageBox->setPromptTitle("@faction/faction_hq/faction_hq_response:terminal_response27");
-		suiMessageBox->setPromptText("@faction/faction_hq/faction_hq_response:terminal_response28");
+		suiMessageBox->setPromptTitle("@faction/faction_hq/faction_hq_response:terminal_response27"); // Confirm Facility Shutdown
+		suiMessageBox->setPromptText("@faction/faction_hq/faction_hq_response:terminal_response28"); // Are you sure that you want to shut down the facility?
 		suiMessageBox->setCancelButton(true, "Cancel");
 		suiMessageBox->setUsingObject(hqTerminal);
 		suiMessageBox->setCallback(new BaseShutdownSuiCallback(player->getZoneServer()));

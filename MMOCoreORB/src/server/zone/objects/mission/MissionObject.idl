@@ -10,16 +10,17 @@ import server.zone.objects.waypoint.WaypointObject;
 import server.zone.Zone;
 
 include server.zone.objects.scene.variables.StringId;
-import server.zone.templates.SharedObjectTemplate;
+include templates.SharedObjectTemplate;
 import server.zone.objects.mission.MissionObserver;
 import server.zone.objects.creature.CreatureObject;
 import system.util.SortedVector;
 import server.zone.objects.mission.MissionObjective;
-include server.zone.templates.TemplateReference;
+include templates.TemplateReference;
 import server.zone.managers.mission.spawnmaps.NpcSpawnPoint;
 include server.zone.objects.mission.MissionTypes;
 include server.zone.managers.faction.FactionManager;
-
+include server.zone.packets.scene.AttributeListMessage;
+include templates.faction.Factions;
 class MissionObject extends IntangibleObject {
 	protected WaypointObject waypointToMission;
 
@@ -103,13 +104,24 @@ class MissionObject extends IntangibleObject {
 
 		targetObjectId = 0;
 
-		faction = FactionManager.FACTIONNEUTRAL;
+		faction = Factions.FACTIONNEUTRAL;
 
 		missionNumber = 0;
 		missionLevel = 0;
 
 		Logger.setLoggingName("MissionObject");
 	}
+	
+	/**
+	 * Fills the attribute list message options that are sent to player creature
+	 * @pre { }
+	 * @post { }
+	 * @param msg attribute list message with the attributes
+	 * @param object player creature to which the message is sent
+	 */
+	@local
+	@dirty
+	public native void fillAttributeList(AttributeListMessage msg, CreatureObject object);
 
 	@preLocked
 	public native WaypointObject createWaypoint();

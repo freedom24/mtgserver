@@ -9,13 +9,13 @@
 #include "server/zone/Zone.h"
 #include "server/zone/objects/building/BuildingObject.h"
 #include "server/zone/objects/cell/CellObject.h"
-#include "server/zone/templates/SharedObjectTemplate.h"
-#include "server/zone/templates/appearance/PortalLayout.h"
-#include "server/zone/templates/appearance/FloorMesh.h"
-#include "server/zone/templates/appearance/PathGraph.h"
-#include "server/zone/templates/appearance/PortalLayout.h"
-#include "server/zone/templates/appearance/MeshAppearanceTemplate.h"
-#include "server/zone/managers/terrain/TerrainManager.h"
+#include "templates/SharedObjectTemplate.h"
+#include "templates/appearance/PortalLayout.h"
+#include "templates/appearance/FloorMesh.h"
+#include "templates/appearance/PathGraph.h"
+#include "templates/appearance/PortalLayout.h"
+#include "templates/appearance/MeshAppearanceTemplate.h"
+#include "terrain/manager/TerrainManager.h"
 #include "server/zone/managers/planet/PlanetManager.h"
 #include "server/zone/managers/collision/PathFinderManager.h"
 #include "server/zone/objects/ship/ShipObject.h"
@@ -110,7 +110,7 @@ bool CollisionManager::checkSphereCollision(const Vector3& origin, float radius,
 	for (int i = 0; i < objects.size(); ++i) {
 		AABBTree* aabbTree = NULL;
 
-		SceneObject* scno = cast<SceneObject*>(objects.get(i).get());
+		SceneObject* scno = static_cast<SceneObject*>(objects.get(i).get());
 
 		try {
 			aabbTree = getAABBTree(scno, -1);
@@ -371,7 +371,9 @@ void CollisionManager::getWorldFloorCollisions(float x, float y, Zone* zone, Sor
 
 		getWorldFloorCollisions(x, y, zone, result, closeObjects);
 	} else {
+#ifdef COV_DEBUG
 		zone->info("Null closeobjects vector in CollisionManager::getWorldFloorCollisions", true);
+#endif
 		SortedVector<ManagedReference<QuadTreeEntry*> > closeObjects;
 
 		zone->getInRangeObjects(x, y, 128, &closeObjects, true);
@@ -457,7 +459,9 @@ bool CollisionManager::checkLineOfSight(SceneObject* object1, SceneObject* objec
 	int maxInRangeObjectCount = 0;
 
 	if (object1->getCloseObjects() == NULL) {
+#ifdef COV_DEBUG
 		object1->info("Null closeobjects vector in CollisionManager::checkLineOfSight for " + object1->getDisplayedName(), true);
+#endif
 
 		closeObjects = new SortedVector<ManagedReference<QuadTreeEntry*> >();
 		zone->getInRangeObjects(object1->getPositionX(), object1->getPositionY(), 512, closeObjects, true);
@@ -672,7 +676,7 @@ bool CollisionManager::checkShipCollision(ShipObject* ship, const Vector3& targe
 	for (int i = 0; i < objects.size(); ++i) {
 		AABBTree* aabbTree = NULL;
 
-		SceneObject* scno = cast<SceneObject*>(objects.get(i).get());
+		SceneObject* scno = static_cast<SceneObject*>(objects.get(i).get());
 
 		try {
 			aabbTree = getAABBTree(scno, -1);

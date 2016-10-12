@@ -6,7 +6,7 @@
 #include "server/zone/objects/tangible/components/generic/CoaMessageDataComponent.h"
 #include "server/zone/managers/player/BadgeList.h"
 
-int FactionRecruiterContainerComponent::canAddObject(SceneObject* sceneObject, SceneObject* object, int containmentType, String& errorDescription) {
+int FactionRecruiterContainerComponent::canAddObject(SceneObject* sceneObject, SceneObject* object, int containmentType, String& errorDescription) const {
 
 	if (sceneObject == object) {
 		return TransferErrorCode::CANTADDTOITSELF;
@@ -44,7 +44,7 @@ int FactionRecruiterContainerComponent::canAddObject(SceneObject* sceneObject, S
 	return TransferErrorCode::INVALIDTYPE;
 }
 
-bool FactionRecruiterContainerComponent::transferObject(SceneObject* sceneObject, SceneObject* object, int containmentType, bool notifyClient, bool allowOverflow, bool notifyRoot) {
+bool FactionRecruiterContainerComponent::transferObject(SceneObject* sceneObject, SceneObject* object, int containmentType, bool notifyClient, bool allowOverflow, bool notifyRoot) const {
 	CoaMessageDataComponent* data = object->getDataObjectComponent()->castTo<CoaMessageDataComponent*>();
 
 	if (data == NULL) {
@@ -71,11 +71,13 @@ bool FactionRecruiterContainerComponent::transferObject(SceneObject* sceneObject
 	AiAgent* recruiter = cast<AiAgent*>(sceneObject);
 
 	String recruiterFaction = recruiter->getFactionString().toLowerCase();
-	bool hasBadge = false;
 	
 	const Badge* badge = BadgeList::instance()->get("event_project_dead_eye_1");
-	if (badge != NULL)
-		hasBadge = ghost->hasBadge(badge->getIndex());
+
+	if (badge == NULL)
+		return false;
+
+	bool hasBadge = ghost->hasBadge(badge->getIndex());
 
 	String faction = data->getFaction().toLowerCase();
 
@@ -98,7 +100,7 @@ bool FactionRecruiterContainerComponent::transferObject(SceneObject* sceneObject
 	}
 
 	Locker locker(recruiter);
-	chatManager->broadcastMessage(recruiter,response.toString(), 0, 0, 0);
+	chatManager->broadcastChatMessage(recruiter,response.toString(), 0, 0, 0);
 
 	object->destroyObjectFromWorld(true);
 	object->destroyObjectFromDatabase();

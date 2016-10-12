@@ -13,13 +13,12 @@
 #include "server/zone/managers/combat/CombatManager.h"
 #include "server/zone/managers/combat/CreatureAttackData.h"
 #include "server/zone/managers/collision/CollisionManager.h"
-#include "server/zone/objects/creature/CreatureAttribute.h"
-#include "server/zone/objects/creature/CreatureState.h"
+#include "templates/params/creature/CreatureAttribute.h"
+#include "templates/params/creature/CreatureState.h"
 #include "server/zone/objects/creature/commands/effect/StateEffect.h"
 #include "server/zone/objects/creature/commands/effect/DotEffect.h"
 #include "server/zone/objects/creature/commands/effect/CommandEffect.h"
 #include "CombatQueueCommand.h"
-#include "server/zone/managers/collision/PathFinderManager.h"
 #include "server/zone/managers/visibility/VisibilityManager.h"
 
 class ForcePowersQueueCommand : public CombatQueueCommand {
@@ -40,7 +39,7 @@ public:
 			if (creature->isProne())
 				return NOPRONE;
 
-			if (!targetObject->isInRange(creature, checkRange + targetObject->getTemplateRadius() + creature->getTemplateRadius()))
+			if(!checkDistance(creature, targetObject, checkRange))
 				return TOOFAR;
 
 			if (!CollisionManager::checkLineOfSight(creature, targetObject)) {

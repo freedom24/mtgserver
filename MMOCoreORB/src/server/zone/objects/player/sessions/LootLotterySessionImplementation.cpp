@@ -6,7 +6,6 @@
  */
 
 #include "engine/engine.h"
-#include "server/zone/managers/objectcontroller/ObjectController.h"
 #include "server/zone/objects/player/sessions/LootLotterySession.h"
 #include "server/zone/objects/player/sessions/LootLotteryBallot.h"
 #include "server/zone/managers/player/PlayerManager.h"
@@ -124,7 +123,8 @@ void LootLotterySessionImplementation::doLotteryDraw() {
 
 	//Reschedule corpse destruction.
 	if (stillGrouped) {
-		ManagedReference<CreatureObject*> leader = group->getLeader().castTo<CreatureObject*>();
+		ManagedReference<CreatureObject*> leader = group->getLeader();
+
 		if (leader != NULL) {
 			Locker lclocker(leader, corpse);
 			leader->getZoneServer()->getPlayerManager()->rescheduleCorpseDestruction(leader, corpse);

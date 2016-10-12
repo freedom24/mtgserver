@@ -46,7 +46,7 @@ object_tangible_deed_event_perk_bantha_static_deed = object_tangible_deed_event_
 	gameObjectType = 8388615,
 	noTrade = 1,
 
-	generatedObjectTemplate = "object/mobile/bantha_saddle.iff",
+	generatedObjectTemplate = "object/tangible/event_perk/static_bantha_saddle.iff",
 	perkType = STATIC,
 }
 

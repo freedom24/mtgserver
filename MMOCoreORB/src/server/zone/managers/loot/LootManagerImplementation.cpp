@@ -12,20 +12,16 @@
 #include "server/zone/objects/creature/CreatureObject.h"
 #include "server/zone/objects/creature/ai/AiAgent.h"
 #include "server/zone/managers/crafting/CraftingManager.h"
-#include "server/zone/managers/templates/TemplateManager.h"
-#include "server/zone/templates/LootItemTemplate.h"
-#include "server/zone/templates/LootGroupTemplate.h"
+#include "templates/LootItemTemplate.h"
+#include "templates/LootGroupTemplate.h"
 #include "server/zone/ZoneServer.h"
 #include "server/zone/managers/stringid/StringIdManager.h"
 #include "LootGroupMap.h"
 
 void LootManagerImplementation::initialize() {
-	lua = new Lua();
-	lua->init();
-
 	info("Loading configuration.");
 
-	if(!loadConfigData()) {
+	if (!loadConfigData()) {
 
 		loadDefaultConfig();
 
@@ -53,13 +49,21 @@ void LootManagerImplementation::initialize() {
 	info("Initialized.", true);
 }
 
-bool LootManagerImplementation::loadConfigFile() {
-	return lua->runFile("scripts/managers/loot_manager.lua");
+void LootManagerImplementation::stop() {
+	lootGroupMap = NULL;
+	craftingManager = NULL;
+	objectManager = NULL;
+	zoneServer = NULL;
 }
 
 bool LootManagerImplementation::loadConfigData() {
-	if (!loadConfigFile())
+	Lua* lua = new Lua();
+	lua->init();
+
+	if (!lua->runFile("scripts/managers/loot_manager.lua")) {
+		delete lua;
 		return false;
+	}
 
 	yellowChance = lua->getGlobalFloat("yellowChance");
 	yellowModifier = lua->getGlobalFloat("yellowModifier");
@@ -156,6 +160,8 @@ bool LootManagerImplementation::loadConfigData() {
 	modsTable = lua->getGlobalObject("lootableHeavyWeaponStatMods");
 	loadLootableMods( &modsTable, &lootableHeavyWeaponMods );
 
+	delete lua;
+
 	return true;
 }
 
@@ -194,7 +200,7 @@ void LootManagerImplementation::setInitialObjectStats(LootItemTemplate* template
 			if (craftingValues->hasProperty(property))
 				continue;
 
-			craftingValues->addExperimentalProperty(property, property, mins->get(i), maxs->get(i), prec->get(i), false, CraftingManager::LINEARCOMBINE);
+			craftingValues->addExperimentalProperty(property, property, mins->get(i), maxs->get(i), prec->get(i), false, ValuesMap::LINEARCOMBINE);
 			if (title == "null")
 				craftingValues->setHidden(property);
 		}
@@ -269,9 +275,11 @@ TangibleObject* LootManagerImplementation::createLootObject(LootItemTemplate* te
 	if (level>0 && templateObject->getJunkDealerTypeNeeded()>1){
 		fJunkValue=fJunkValue + (fJunkValue * ((float)level / 100)); // This is the loot value calculation if the item has a level
 	}
-	CraftingValues craftingValues = templateObject->getCraftingValuesCopy();
 
-	setInitialObjectStats(templateObject, &craftingValues, prototype);
+	ValuesMap valuesMap = templateObject->getValuesMapCopy();
+	CraftingValues* craftingValues = new CraftingValues(valuesMap);
+
+	setInitialObjectStats(templateObject, craftingValues, prototype);
 
 	setCustomObjectName(prototype, templateObject);
 
@@ -304,22 +312,22 @@ TangibleObject* LootManagerImplementation::createLootObject(LootItemTemplate* te
 	String subtitle;
 	bool yellow = false;
 
-	for (int i = 0; i < craftingValues.getExperimentalPropertySubtitleSize(); ++i) {
-		subtitle = craftingValues.getExperimentalPropertySubtitle(i);
+	for (int i = 0; i < craftingValues->getExperimentalPropertySubtitleSize(); ++i) {
+		subtitle = craftingValues->getExperimentalPropertySubtitle(i);
 
 		if (subtitle == "hitpoints" && !prototype->isComponent()) {
 			continue;
 		}
 
-		float min = craftingValues.getMinValue(subtitle);
-		float max = craftingValues.getMaxValue(subtitle);
+		float min = craftingValues->getMinValue(subtitle);
+		float max = craftingValues->getMaxValue(subtitle);
 
 		if (min == max)
 			continue;
 
 		float percentage = System::random(10000) / 10000.f;
 
-		craftingValues.setCurrentPercentage(subtitle, percentage);
+		craftingValues->setCurrentPercentage(subtitle, percentage);
 
 		if (subtitle == "maxrange" || subtitle == "midrange" || subtitle == "zerorangemod" || subtitle == "maxrangemod" || subtitle == "forcecost") {
 			continue;
@@ -395,8 +403,8 @@ TangibleObject* LootManagerImplementation::createLootObject(LootItemTemplate* te
 			yellowLooted.increment();
 		}
 
-		craftingValues.setMinValue(subtitle, min);
-		craftingValues.setMaxValue(subtitle, max);
+		craftingValues->setMinValue(subtitle, min);
+		craftingValues->setMaxValue(subtitle, max);
 	}
 
 	if (yellow) {
@@ -411,20 +419,20 @@ TangibleObject* LootManagerImplementation::createLootObject(LootItemTemplate* te
 	}
 
 	// Use percentages to recalculate the values
-	craftingValues.recalculateValues(false);
+	craftingValues->recalculateValues(false);
 
-	craftingValues.addExperimentalProperty("creatureLevel", "creatureLevel", level, level, 0, false, CraftingManager::LINEARCOMBINE);
-	craftingValues.setHidden("creatureLevel");
+	craftingValues->addExperimentalProperty("creatureLevel", "creatureLevel", level, level, 0, false, ValuesMap::LINEARCOMBINE);
+	craftingValues->setHidden("creatureLevel");
 
 	//check weapons and weapon components for min damage > max damage
 	if (prototype->isComponent() || prototype->isWeaponObject()) {
-		if (craftingValues.hasProperty("mindamage") && craftingValues.hasProperty("maxdamage")) {
-			float oldMin = craftingValues.getCurrentValue("mindamage");
-			float oldMax = craftingValues.getCurrentValue("maxdamage");
+		if (craftingValues->hasProperty("mindamage") && craftingValues->hasProperty("maxdamage")) {
+			float oldMin = craftingValues->getCurrentValue("mindamage");
+			float oldMax = craftingValues->getCurrentValue("maxdamage");
 
 			if (oldMin > oldMax) {
-				craftingValues.setCurrentValue("mindamage", oldMax);
-				craftingValues.setCurrentValue("maxdamage", oldMin);
+				craftingValues->setCurrentValue("mindamage", oldMax);
+				craftingValues->setCurrentValue("maxdamage", oldMin);
 			}
 		}
 	}
@@ -435,14 +443,16 @@ TangibleObject* LootManagerImplementation::createLootObject(LootItemTemplate* te
 
 	setSkillMods(prototype, templateObject, level, excMod);
 
-	setSockets(prototype, &craftingValues);
+	setSockets(prototype, craftingValues);
 
 	// Update the Tano with new values
-	prototype->updateCraftingValues(&craftingValues, true);
+	prototype->updateCraftingValues(craftingValues, true);
 
 	//add some condition damage where appropriate
 	if (!maxCondition)
-		addConditionDamage(prototype, &craftingValues);
+		addConditionDamage(prototype, craftingValues);
+
+	delete craftingValues;
 
 	return prototype;
 }

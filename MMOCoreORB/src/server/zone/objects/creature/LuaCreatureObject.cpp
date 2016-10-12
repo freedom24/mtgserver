@@ -61,6 +61,8 @@ Luna<LuaCreatureObject>::RegType LuaCreatureObject::Register[] = {
 		{ "isInRangeWithObject", &LuaSceneObject::isInRangeWithObject },
 		{ "getDistanceTo", &LuaSceneObject::getDistanceTo },
 		{ "getServerObjectCRC", &LuaSceneObject::getServerObjectCRC },
+		{ "isFeigningDeath", &LuaCreatureObject::isFeigningDeath},
+		{ "hasState", &LuaCreatureObject::hasState},
 		{ "setState", &LuaCreatureObject::setState},
 		{ "setLootRights", &LuaCreatureObject::setLootRights},
 		{ "getPosture", &LuaCreatureObject::getPosture},
@@ -93,6 +95,8 @@ Luna<LuaCreatureObject>::RegType LuaCreatureObject::Register[] = {
 		{ "getGroupSize", &LuaCreatureObject::getGroupSize},
 		{ "getGroupMember", &LuaCreatureObject::getGroupMember},
 		{ "setOptionsBitmask", &LuaCreatureObject::setOptionsBitmask},
+		{ "setOptionBit", &LuaTangibleObject::setOptionBit},
+		{ "clearOptionBit", &LuaTangibleObject::clearOptionBit},
 		{ "setPvpStatusBitmask", &LuaTangibleObject::setPvpStatusBitmask},
 		{ "setPvpStatusBit", &LuaTangibleObject::setPvpStatusBit},
 		{ "isChangingFactionStatus", &LuaTangibleObject::isChangingFactionStatus },
@@ -174,6 +178,18 @@ int LuaCreatureObject::addDotState(lua_State* L) {
 	realObject->addDotState(attacker, dotType, objectID, strength, type, duration, potency, defense);
 
 	return 0;
+}
+
+int LuaCreatureObject::isFeigningDeath(lua_State* L) {
+	lua_pushnumber(L, realObject->isFeigningDeath());
+	return 1;
+}
+
+int LuaCreatureObject::hasState(lua_State* L) {
+	uint32 state = (uint32) lua_tonumber(L, -1);
+
+	lua_pushnumber(L, realObject->hasState(state));
+	return 1;
 }
 
 int LuaCreatureObject::setState(lua_State* L) {
@@ -729,7 +745,7 @@ int LuaCreatureObject::getGroupMember(lua_State* L) {
 		return 1;
 	}
 
-	SceneObject* creo = group->getGroupMember(i);
+	CreatureObject* creo = group->getGroupMember(i);
 
 	if (creo == NULL) {
 		realObject->info("LuaCreatureObject::getGroupMember GroupMember is NULL.");

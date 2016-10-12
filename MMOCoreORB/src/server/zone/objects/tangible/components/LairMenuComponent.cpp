@@ -10,11 +10,10 @@
 #include "LairMenuComponent.h"
 #include "server/zone/objects/scene/components/ObjectMenuComponent.h"
 #include "server/zone/packets/object/ObjectMenuResponse.h"
-#include "server/zone/managers/objectcontroller/ObjectController.h"
 #include "server/zone/managers/minigames/ForageManager.h"
 #include "server/zone/managers/creature/LairObserver.h"
 
-void LairMenuComponent::fillObjectMenuResponse(SceneObject* sceneObject, ObjectMenuResponse* menuResponse, CreatureObject* player) {
+void LairMenuComponent::fillObjectMenuResponse(SceneObject* sceneObject, ObjectMenuResponse* menuResponse, CreatureObject* player) const {
 
 	if (!sceneObject->isTangibleObject())
 		return;
@@ -41,7 +40,7 @@ void LairMenuComponent::fillObjectMenuResponse(SceneObject* sceneObject, ObjectM
 
 }
 
-int LairMenuComponent::handleObjectMenuSelect(SceneObject* sceneObject, CreatureObject* player, byte selectedID) {
+int LairMenuComponent::handleObjectMenuSelect(SceneObject* sceneObject, CreatureObject* player, byte selectedID) const {
 	if (!sceneObject->isTangibleObject())
 		return 0;
 

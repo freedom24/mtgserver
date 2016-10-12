@@ -6,21 +6,21 @@
  */
 
 #include "gtest/gtest.h"
-#include "server/zone/templates/LootItemTemplate.h"
-#include "server/zone/templates/SharedObjectTemplate.h"
-#include "server/zone/templates/tangible/SharedCreatureObjectTemplate.h"
-#include "server/zone/templates/LootGroupTemplate.h"
+#include "templates/LootItemTemplate.h"
+#include "templates/SharedObjectTemplate.h"
+#include "templates/creature/SharedCreatureObjectTemplate.h"
+#include "templates/LootGroupTemplate.h"
 #include "server/zone/managers/faction/FactionManager.h"
 #include "server/zone/managers/creature/DnaManager.h"
 #include "server/zone/managers/loot/LootGroupMap.h"
 #include "server/zone/managers/creature/CreatureTemplateManager.h"
 #include "server/zone/managers/loot/lootgroup/LootGroupCollectionEntry.h"
-#include "server/conf/ConfigManager.h"
-#include "server/zone/managers/templates/DataArchiveStore.h"
+#include "conf/ConfigManager.h"
+#include "templates/manager/DataArchiveStore.h"
 #include "server/zone/managers/objectcontroller/command/CommandConfigManager.h"
 #include "server/zone/managers/objectcontroller/command/CommandList.h"
 #include "server/zone/managers/creature/SpawnAreaMap.h"
-#include "server/zone/templates/string/StringFile.h"
+#include "templates/string/StringFile.h"
 
 class LuaMobileTest : public ::testing::Test {
 protected:
@@ -43,6 +43,10 @@ public:
 	}
 
 	~LuaMobileTest() {
+		lootGroupMap = NULL;
+		templateManager = NULL;
+		delete commandConfigManager;
+		delete list;
 	}
 
 	void SetUp() {
@@ -359,6 +363,13 @@ TEST_F(LuaMobileTest, LuaMobileTemplatesTest) {
 		float scale = creature->getScale();
 		EXPECT_TRUE( scale > 0 ) << "Scale is not a positive value on mobile: " << templateName;
 
+		// Verify PACK mobs have a social group
+		uint32 creatureBitmask = creature->getCreatureBitmask();
+		String socialGroup = creature->getSocialGroup();
+		if (creatureBitmask & CreatureFlag::PACK) {
+			EXPECT_FALSE( socialGroup.isEmpty() ) << "Social group is empty on pack mobile: " << templateName;
+		}
+
 		// Verify loot group percentages
 		LootGroupCollection* groupCollection = creature->getLootGroups();
 		if( groupCollection->count() > 0 ){
@@ -667,9 +678,9 @@ TEST_F(LuaMobileTest, LuaSpawnManagerTest) {
 	lua->init();
 
 	for (int i = 0; i < zoneNames.size(); i++) {
-		lua->runFile("scripts/managers/spawn_manager/" + zoneNames.get(i) + ".lua");
-
 		// Verify regions
+		lua->runFile("scripts/managers/spawn_manager/" + zoneNames.get(i) + "_regions.lua");
+
 		LuaObject regions = lua->getGlobalObject(zoneNames.get(i) + "_regions");
 
 		ASSERT_TRUE( regions.isValidTable() ) << "Regions table in " << zoneNames.get(i).toCharArray() << " spawn manager is invalid.";
@@ -707,6 +718,8 @@ TEST_F(LuaMobileTest, LuaSpawnManagerTest) {
 		regions.pop();
 
 		// Verify static spawns
+		lua->runFile("scripts/managers/spawn_manager/" + zoneNames.get(i) + "_static_spawns.lua");
+
 		LuaObject spawns = lua->getGlobalObject(zoneNames.get(i) + "_static_spawns");
 
 		ASSERT_TRUE( spawns.isValidTable() ) << "Static spawns table in " << zoneNames.get(i).toCharArray() << " spawn manager is invalid.";
@@ -726,4 +739,6 @@ TEST_F(LuaMobileTest, LuaSpawnManagerTest) {
 
 		spawns.pop();
 	}
+
+	delete lua;
 }

@@ -1,7 +1,7 @@
 #include "server/zone/managers/creature/DynamicSpawnObserver.h"
 #include "server/zone/objects/creature/events/RespawnCreatureTask.h"
 #include "server/zone/objects/creature/events/DespawnDynamicSpawnTask.h"
-#include "server/zone/templates/mobile/CreatureTemplate.h"
+#include "server/zone/objects/creature/ai/CreatureTemplate.h"
 #include "server/zone/managers/creature/CreatureManager.h"
 #include "server/zone/managers/creature/CreatureTemplateManager.h"
 #include "server/zone/objects/creature/ai/Creature.h"
@@ -64,6 +64,7 @@ void DynamicSpawnObserverImplementation::spawnInitialMobiles(SceneObject* buildi
 	int totalNumberToSpawn = (lairTemplate->getSpawnLimit() / 3) + spawnLimitAdjustment;
 	VectorMap<String, int> objectsToSpawn; // String mobileTemplate, int number to spawn
 	Vector<String>* mobiles = lairTemplate->getWeightedMobiles();
+	uint32 lairTemplateCRC = getLairTemplateName().hashCode();
 
 	if (totalNumberToSpawn < 1)
 		totalNumberToSpawn = 1;
@@ -126,6 +127,7 @@ void DynamicSpawnObserverImplementation::spawnInitialMobiles(SceneObject* buildi
 				ai->setRespawnTimer(0);
 				ai->resetRespawnCounter();
 				ai->setHomeObject(building);
+				ai->setLairTemplateCRC(lairTemplateCRC);
 
 				spawnedCreatures.add(creo);
 

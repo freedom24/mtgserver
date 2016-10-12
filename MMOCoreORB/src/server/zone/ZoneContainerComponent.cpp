@@ -12,10 +12,10 @@
 #include "server/zone/objects/building/BuildingObject.h"
 #include "server/zone/objects/area/ActiveArea.h"
 #include "server/zone/managers/planet/PlanetManager.h"
-#include "server/zone/managers/terrain/TerrainManager.h"
-#include "server/zone/templates/tangible/SharedBuildingObjectTemplate.h"
+#include "terrain/manager/TerrainManager.h"
+#include "templates/building/SharedBuildingObjectTemplate.h"
 
-bool ZoneContainerComponent::insertActiveArea(Zone* newZone, ActiveArea* activeArea) {
+bool ZoneContainerComponent::insertActiveArea(Zone* newZone, ActiveArea* activeArea) const {
 	if (newZone == NULL)
 		return false;
 
@@ -51,7 +51,7 @@ bool ZoneContainerComponent::insertActiveArea(Zone* newZone, ActiveArea* activeA
 	newZone->getInRangeObjects(activeArea->getPositionX(), activeArea->getPositionY(), range, &objects, false);
 
 	for (int i = 0; i < objects.size(); ++i) {
-		SceneObject* object = cast<SceneObject*>(objects.get(i));
+		SceneObject* object = static_cast<SceneObject*>(objects.get(i));
 
 		if (!object->isTangibleObject()) {
 			continue;
@@ -71,11 +71,14 @@ bool ZoneContainerComponent::insertActiveArea(Zone* newZone, ActiveArea* activeA
 	return true;
 }
 
-bool ZoneContainerComponent::removeActiveArea(Zone* zone, ActiveArea* activeArea) {
+bool ZoneContainerComponent::removeActiveArea(Zone* zone, ActiveArea* activeArea) const {
 	if (zone == NULL)
 		return false;
 
 	ManagedReference<SceneObject*> thisLocker = activeArea;
+
+	if (!activeArea->isInQuadTree())
+		return false;
 
 	Locker zoneLocker(zone);
 
@@ -94,7 +97,7 @@ bool ZoneContainerComponent::removeActiveArea(Zone* zone, ActiveArea* activeArea
 	zoneLocker.release();
 
 	for (int i = 0; i < objects.size(); ++i) {
-		SceneObject* object = cast<SceneObject*>(objects.get(i));
+		SceneObject* object = static_cast<SceneObject*>(objects.get(i));
 
 	//	Locker olocker(object);
 
@@ -117,8 +120,12 @@ bool ZoneContainerComponent::removeActiveArea(Zone* zone, ActiveArea* activeArea
 	return true;
 }
 
-bool ZoneContainerComponent::transferObject(SceneObject* sceneObject, SceneObject* object, int containmentType, bool notifyClient, bool allowOverflow, bool notifyRoot) {
+bool ZoneContainerComponent::transferObject(SceneObject* sceneObject, SceneObject* object, int containmentType, bool notifyClient, bool allowOverflow, bool notifyRoot) const {
 	Zone* newZone = dynamic_cast<Zone*>(sceneObject);
+
+	if (newZone == NULL)
+		return false;
+
 	Zone* zone = object->getZone();
 
 	if (object->isActiveArea())
@@ -202,7 +209,7 @@ bool ZoneContainerComponent::transferObject(SceneObject* sceneObject, SceneObjec
 }
 
 
-bool ZoneContainerComponent::removeObject(SceneObject* sceneObject, SceneObject* object, SceneObject* destination, bool notifyClient) {
+bool ZoneContainerComponent::removeObject(SceneObject* sceneObject, SceneObject* object, SceneObject* destination, bool notifyClient) const {
 	Zone* zone = dynamic_cast<Zone*>(sceneObject);
 
 	if (object->isActiveArea())
@@ -247,7 +254,9 @@ bool ZoneContainerComponent::removeObject(SceneObject* sceneObject, SceneObject*
 			} catch (...) {
 			}
 		} else {
+#ifdef COV_DEBUG
 			object->info("Null closeobjects vector in ZoneContainerComponent::removeObject", true);
+#endif
 			SortedVector<ManagedReference<QuadTreeEntry*> > closeSceneObjects;
 
 			zone->getInRangeObjects(object->getPositionX(), object->getPositionY(), 512, &closeSceneObjects, false);
@@ -279,7 +288,7 @@ bool ZoneContainerComponent::removeObject(SceneObject* sceneObject, SceneObject*
 
 		if (object->isTangibleObject()) {
 			TangibleObject* tano = cast<TangibleObject*>(object);
-			Vector<ManagedReference<ActiveArea*> >* activeAreas = tano->getActiveAreas();
+			SortedVector<ManagedReference<ActiveArea*> >* activeAreas = tano->getActiveAreas();
 
 			while (activeAreas->size() > 0) {
 				Locker _alocker(object->getContainerLock());

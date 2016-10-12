@@ -11,7 +11,7 @@
 #include "engine/engine.h"
 #include "FactionMap.h"
 #include "server/zone/objects/creature/CreatureObject.h"
-#include "server/zone/templates/faction/FactionRanks.h"
+#include "templates/faction/FactionRanks.h"
 
 class FactionMap;
 
@@ -20,12 +20,6 @@ class FactionManager : public Singleton<FactionManager>, public Logger, public O
 	FactionRanks factionRanks;
 
 public:
-	enum {
-		FACTIONNEUTRAL = 0,
-		FACTIONIMPERIAL = 0xDB4ACC54,
-		FACTIONREBEL = 0x16148850
-	};
-
 	FactionManager();
 
 	/**
@@ -34,12 +28,6 @@ public:
 	 * Sets up faction relationships
 	 */
 	void loadData();
-
-	/**
-	 * Lua Interface function that adds a faction relationship to the FactionMap.
-	 * @param L The Lua State containing the data.
-	 */
-	static int addFaction(lua_State* L);
 
 	/**
 	 * Awards points to the player based on the faction they killed.

@@ -9,7 +9,7 @@
 #include "server/zone/ZoneServer.h"
 #include "server/zone/objects/creature/CreatureObject.h"
 #include "server/zone/objects/building/BuildingObject.h"
-#include "server/zone/objects/creature/CreatureState.h"
+#include "templates/params/creature/CreatureState.h"
 #include "server/zone/managers/objectcontroller/ObjectController.h"
 #include "ObjectControllerMessageCallback.h"
 #include "server/zone/managers/player/PlayerManager.h"
@@ -72,7 +72,7 @@ public:
 
 		taskqueue = 3;
 
-		ManagedReference<SceneObject*> player = client->getPlayer();
+		ManagedReference<CreatureObject*> player = client->getPlayer();
 
 		if (player != NULL) {
 			Zone* zone = player->getLocalZone();
@@ -88,7 +88,6 @@ public:
 					taskqueue = 6;
 			}
 		}
-
 	}
 
 	void parse(Message* message) {
@@ -111,7 +110,7 @@ public:
 		//info("datatransform with parent", true);
 	}
 
-	void bounceBack(SceneObject* object, ValidatedPosition& pos) {
+	void bounceBack(CreatureObject* object, ValidatedPosition& pos) {
 		Vector3 teleportPoint = pos.getPosition();
 		uint64 teleportParentID = pos.getParent();
 
@@ -119,12 +118,7 @@ public:
 	}
 
 	void run() {
-		ManagedReference<SceneObject*> sceneObject = client->getPlayer().get();
-
-		if (sceneObject == NULL)
-			return;
-
-		CreatureObject* object = sceneObject->asCreatureObject();
+		ManagedReference<CreatureObject*> object = client->getPlayer().get();
 
 		if (object == NULL)
 			return;
@@ -161,16 +155,18 @@ public:
 					object->updateZone(light);
 			}
 		}
-
 	}
 
-	void updatePosition(CreatureObject* object){
+	void updatePosition(CreatureObject* object) {
 		PlayerObject* ghost = object->getPlayerObject();
 
-		if (isnan(positionX) || isnan(positionY) || isnan(positionZ))
+		if (ghost == NULL)
 			return;
 
-		if (isinf(positionX) || isinf(positionY) || isinf(positionZ))
+		if (std::isnan(positionX) || std::isnan(positionY) || std::isnan(positionZ))
+			return;
+
+		if (std::isinf(positionX) || std::isinf(positionY) || std::isinf(positionZ))
 			return;
 
 		if (ghost->isTeleporting())
@@ -195,6 +191,7 @@ public:
 
 			ObjectController* objectController = zoneServer->getObjectController();
 			objectController->activateCommand(object, STRING_HASHCODE("dismount"), 0, 0, "");
+			return; // don't allow a dismount and parent update in the same frame, this looks better than bouncing their position
 		}
 
 		uint32 objectMovementCounter = object->getMovementCounter();
@@ -205,7 +202,6 @@ public:
 			object->info(msg.toString(), true);
 			return;
 		}*/
-
 
 		ManagedReference<SceneObject*> newParent = server->getZoneServer()->getObject(parent, true);
 
@@ -310,7 +306,6 @@ public:
 			object->updateZoneWithParent(newParent, false);
 		else
 			object->updateZoneWithParent(newParent, true);
-
 	}
 
 };

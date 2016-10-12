@@ -15,7 +15,6 @@
 #include "server/zone/ZoneServer.h"
 #include "server/chat/StringIdChatParameter.h"
 #include "server/zone/objects/tangible/components/vendor/VendorDataComponent.h"
-#include "server/chat/ChatManager.h"
 #include "server/zone/managers/object/ObjectManager.h"
 #include "server/zone/packets/auction/ItemSoldMessage.h"
 
@@ -121,12 +120,9 @@ void AuctionsMapImplementation::removeVendorItem(SceneObject* vendor, AuctionIte
 	if(vendorItems == NULL)
 		return;
 
-	if(!vendorItems->contains(item))
-		return;
-
 	//Locker vlocker(vendorItems);
 
-	if(vendorItems->removeElement(item))
+	if(vendorItems->drop(item))
 		return;
 
 	logger.error("unable to remove vendor item");
@@ -140,12 +136,9 @@ void AuctionsMapImplementation::removeBazaarItem(SceneObject* vendor,  AuctionIt
 	if(bazaarItems == NULL)
 		return;
 
-	if(!bazaarItems->contains(item))
-		return;
-
 	//Locker blocker(bazaarItems);
 
-	if(!bazaarItems->removeElement(item))
+	if(!bazaarItems->drop(item))
 		logger.error("unable to remove bazaar item");
 
 }
@@ -194,6 +187,8 @@ int AuctionsMapImplementation::getVendorItemCount(SceneObject* vendor, bool forS
 
 	int size = 0;
 
+	ReadLocker rlocker(vendorItems);
+
 	for (int i = 0; i < vendorItems->size(); ++i) {
 		AuctionItem* item = vendorItems->get(i);
 		if (item == NULL)
@@ -226,6 +221,8 @@ void AuctionsMapImplementation::deleteTerminalItems(SceneObject* vendor) {
 	ZoneServer* zserv = vendor->getZoneServer();
 
 	if(vendorItems != NULL) {
+		ReadLocker rlocker(vendorItems);
+
 		for(int i = 0; i < vendorItems->size(); ++i) {
 			ManagedReference<AuctionItem*> item = vendorItems->get(i);
 
@@ -238,8 +235,10 @@ void AuctionsMapImplementation::deleteTerminalItems(SceneObject* vendor) {
 				ManagedReference<SceneObject*> sceno = zserv->getObject(oid);
 
 				if (sceno != NULL) {
-					Locker locker(sceno);
-					sceno->destroyObjectFromDatabase(true);
+					EXECUTE_TASK_1(sceno, {
+							Locker locker(sceno_p);
+							sceno_p->destroyObjectFromDatabase(true);
+					});
 				}
 			}
 		}
@@ -252,7 +251,7 @@ void AuctionsMapImplementation::updateUID(SceneObject* vendor, const String& old
 	Locker locker(_this.getReferenceUnsafeStaticCast());
 	
 	if (vendor == NULL) {
-		logger.error("NULL vendor while updating UID  Vendor Is Bazaar: " + String::valueOf(vendor->isBazaarTerminal()));
+		logger.error("NULL vendor while updating UID");
 		return;
 	}
 

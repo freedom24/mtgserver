@@ -17,12 +17,11 @@ include server.zone.objects.scene.SessionFacadeType;
 include server.zone.objects.player.sui.listbox.SuiListBox;
 include server.zone.objects.player.sui.inputbox.SuiInputBox;
 include server.zone.managers.vendor.VendorSelectionNode;
-import server.zone.managers.auction.AuctionManager;
-include server.zone.templates.tangible.VendorCreatureTemplate;
+include templates.creature.VendorCreatureTemplate;
 
 
 class CreateVendorSession extends Facade {
-	@weakreference
+	@weakReference
 	protected CreatureObject player;
 
 	VendorSelectionNode currentNode;
@@ -64,7 +63,7 @@ class CreateVendorSession extends Facade {
 
 	public native void createVendor(string name);
 
-	private native void randomizeVendorLooks(CreatureObject vendor);
+	public native void randomizeVendorLooks(CreatureObject vendor);
 	
 	private native void randomizeVendorClothing(CreatureObject vendor, VendorCreatureTemplate vendorTempl);
 	

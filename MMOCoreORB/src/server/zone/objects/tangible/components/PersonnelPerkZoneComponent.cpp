@@ -3,9 +3,9 @@
 #include "server/zone/Zone.h"
 #include "server/zone/managers/creature/CreatureManager.h"
 #include "server/zone/objects/tangible/components/EventPerkDataComponent.h"
-#include "server/zone/templates/tangible/EventPerkDeedTemplate.h"
+#include "templates/tangible/EventPerkDeedTemplate.h"
 
-void PersonnelPerkZoneComponent::notifyInsertToZone(SceneObject* sceneObject, Zone* zne) {
+void PersonnelPerkZoneComponent::notifyInsertToZone(SceneObject* sceneObject, Zone* zne) const {
 	if (zne == NULL)
 		return;
 

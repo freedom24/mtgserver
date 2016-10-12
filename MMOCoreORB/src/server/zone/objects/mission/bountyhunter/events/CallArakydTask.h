@@ -11,6 +11,7 @@
 #include "server/zone/managers/planet/PlanetManager.h"
 #include "server/zone/managers/creature/CreatureManager.h"
 #include "server/zone/managers/structure/StructureManager.h"
+#include "server/zone/objects/structure/StructureObject.h"
 
 namespace server {
 namespace zone {
@@ -136,7 +137,7 @@ public:
 		vec->safeCopyTo(closeObjects);
 
 		for (int j = 0; j < closeObjects.size(); j++) {
-			SceneObject* obj = cast<SceneObject*>(closeObjects.get(j));
+			SceneObject* obj = static_cast<SceneObject*>(closeObjects.get(j));
 
 			SharedObjectTemplate* objectTemplate = obj->getObjectTemplate();
 

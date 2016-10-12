@@ -16,7 +16,7 @@ end
 function TatooineAnchorheadScreenPlay:spawnSceneObjects()
 
 	--Tavern
-	spawnSceneObject("tatooine", "object/mobile/dressed_rebel_crewman_human_male_03.iff", -0.3, -4.0, -3.7, 1213349, math.rad(90) )
+	spawnSceneObject("tatooine", "object/mobile/le_repair_droid.iff", -0.3, -4.0, -3.7, 1213349, math.rad(90) )
 
 end
 
@@ -27,7 +27,7 @@ function TatooineAnchorheadScreenPlay:spawnMobiles()
 	--Tavern
 	local pNpc = spawnMobile("tatooine", "borra_setas",60,9.51111,0.408271,-0.736723,320.12,1213345)
 	self:setMoodString(pNpc, "worried")
-	pNpc = spawnMobile("tatooine", "commoner_tatooine",60,-9.58703,0.408271,0.574718,94,1213345)
+	pNpc = spawnMobile("tatooine", "commoner_tatooine",60,-9.4,0.4,2.0,161,1213345)
 	self:setMoodString(pNpc, "npc_standing_drinking")
 	--{"nitra_vendallan",60,-2.95305,0.40827,-9.30713,12.2342,1213345, "calm", "Nitra Vendallan"},
 	spawnMobile("tatooine", "trainer_doctor",0,1.53792,1.00421,6.82596,265,1213346)
@@ -95,10 +95,10 @@ function TatooineAnchorheadScreenPlay:spawnMobiles()
 	spawnMobile("tatooine", "cu_pa",300,186.305,14.9233,-5467.36,145.471,0)
 	spawnMobile("tatooine", "cu_pa",300,166.736,4.42212,-5483.28,304.088,0)
 	spawnMobile("tatooine", "rebel_recruiter",60,69.6872,52,-5349.47,360.011,0)
-	spawnMobile("tatooine", "scyk",300,3.34558,86.6525,-5245.25,82.0905,0)
-	spawnMobile("tatooine", "scyk",300,-26.4483,85.5717,-5227.67,257.612,0)
-	spawnMobile("tatooine", "scyk",300,-4.51558,88.9463,-5226.49,314.221,0)
-	spawnMobile("tatooine", "scyk",300,16.8025,87.749,-5249.62,280.51,0)
+	spawnMobile("tatooine", "rill",300,3.34558,86.6525,-5245.25,82.0905,0)
+	spawnMobile("tatooine", "rill",300,-26.4483,85.5717,-5227.67,257.612,0)
+	spawnMobile("tatooine", "rill",300,-4.51558,88.9463,-5226.49,314.221,0)
+	spawnMobile("tatooine", "rill",300,16.8025,87.749,-5249.62,280.51,0)
 	spawnMobile("tatooine", "zucca_boar",300,176.37,29.6614,-5228.44,23.7572,0)
 	spawnMobile("tatooine", "zucca_boar",300,177.37,29.3367,-5227.44,202.645,0)
 	spawnMobile("tatooine", "zucca_boar",300,171.993,33.695,-5229.99,181.173,0)

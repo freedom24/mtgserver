@@ -14,13 +14,12 @@
 #include "server/zone/packets/tangible/TangibleObjectDeltaMessage3.h"
 #include "server/zone/packets/tangible/TangibleObjectDeltaMessage6.h"
 #include "server/zone/packets/scene/AttributeListMessage.h"
-#include "server/zone/templates/SharedTangibleObjectTemplate.h"
-#include "server/zone/objects/creature/CreatureFlag.h"
+#include "templates/SharedTangibleObjectTemplate.h"
+#include "templates/params/creature/CreatureFlag.h"
 #include "server/zone/packets/tangible/UpdatePVPStatusMessage.h"
 #include "server/zone/objects/area/ActiveArea.h"
 #include "server/zone/objects/creature/CreatureObject.h"
 #include "server/zone/objects/creature/ai/AiAgent.h"
-#include "server/zone/managers/crafting/CraftingManager.h"
 #include "server/zone/objects/tangible/component/Component.h"
 #include "server/zone/objects/factorycrate/FactoryCrate.h"
 #include "server/zone/objects/player/sessions/SlicingSession.h"
@@ -30,7 +29,7 @@
 #include "tasks/ClearDefenderListsTask.h"
 #include "server/zone/objects/manufactureschematic/craftingvalues/CraftingValues.h"
 #include "server/zone/objects/manufactureschematic/ingredientslots/ComponentSlot.h"
-#include "server/zone/templates/tangible/tool/RepairToolTemplate.h"
+#include "templates/tangible/tool/RepairToolTemplate.h"
 #include "server/zone/objects/tangible/tool/repair/RepairTool.h"
 #include "server/zone/managers/player/PlayerManager.h"
 #include "server/zone/managers/creature/PetManager.h"
@@ -38,6 +37,7 @@
 #include "server/zone/objects/tangible/wearables/WearableObject.h"
 #include "server/zone/objects/intangible/PetControlDevice.h"
 #include "server/zone/objects/tangible/tool/antidecay/AntiDecayKit.h"
+#include "templates/faction/Factions.h"
 #include "engine/engine.h"
 
 
@@ -48,7 +48,7 @@ void TangibleObjectImplementation::initializeTransientMembers() {
 
 	setLoggingName("TangibleObject");
 
-	if (faction !=  FactionManager::FACTIONREBEL && faction != FactionManager::FACTIONIMPERIAL) {
+	if (faction !=  Factions::FACTIONREBEL && faction != Factions::FACTIONIMPERIAL) {
 		faction = 0;
 	}
 }
@@ -157,12 +157,12 @@ void TangibleObjectImplementation::broadcastPvpStatusBitmask() {
 			if (obj != NULL && obj->isCreatureObject()) {
 				CreatureObject* creo = obj->asCreatureObject();
 
-				sendPvpStatusTo(creo);
+				if (creo->isPlayerCreature())
+					sendPvpStatusTo(creo);
 
-				if (thisCreo != NULL)
+				if (thisCreo != NULL && thisCreo->isPlayerCreature())
 					creo->sendPvpStatusTo(thisCreo);
 			}
-
 		}
 	}
 }
@@ -189,13 +189,13 @@ void TangibleObjectImplementation::clearPvpStatusBit(uint32 pvpStatus, bool noti
 	}
 }
 
-void TangibleObjectImplementation::synchronizedUIListen(SceneObject* player, int value) {
+void TangibleObjectImplementation::synchronizedUIListen(CreatureObject* player, int value) {
 	// Send TANO7 Baseline
 	TangibleObjectMessage7* tano7 = new TangibleObjectMessage7(asTangibleObject());
 	player->sendMessage(tano7);
 }
 
-void TangibleObjectImplementation::synchronizedUIStopListen(SceneObject* player, int value) {
+void TangibleObjectImplementation::synchronizedUIStopListen(CreatureObject* player, int value) {
 
 }
 
@@ -437,6 +437,7 @@ void TangibleObjectImplementation::setCustomizationVariable(const String& type, 
 }
 
 void TangibleObjectImplementation::setCountdownTimer(unsigned int newUseCount, bool notifyClient) {
+
 	if (useCount == newUseCount)
 		return;
 
@@ -458,6 +459,12 @@ void TangibleObjectImplementation::setUseCount(uint32 newUseCount, bool notifyCl
 
 	setCountdownTimer(newUseCount, notifyClient);
 
+
+}
+
+void TangibleObjectImplementation::decreaseUseCount(unsigned int decrementAmount, bool notifyClient) {
+	setUseCount(useCount - decrementAmount, notifyClient);
+
 	if (useCount < 1 && !isCreatureObject()) {
 		destroyObjectFromWorld(true);
 
@@ -465,10 +472,6 @@ void TangibleObjectImplementation::setUseCount(uint32 newUseCount, bool notifyCl
 
 		return;
 	}
-}
-
-void TangibleObjectImplementation::decreaseUseCount() {
-	setUseCount(useCount - 1, true);
 }
 
 void TangibleObjectImplementation::setMaxCondition(int maxCond, bool notifyClient) {
@@ -559,12 +562,12 @@ int TangibleObjectImplementation::notifyObjectDestructionObservers(TangibleObjec
 	if (threatMap != NULL)
 		threatMap->removeAll();
 
-	dropFromDefenderLists(attacker);
+	dropFromDefenderLists();
 
 	return 1;
 }
 
-void TangibleObjectImplementation::dropFromDefenderLists(TangibleObject* destructor) {
+void TangibleObjectImplementation::dropFromDefenderLists() {
 	if (defenderList.size() == 0)
 		return;
 
@@ -911,6 +914,12 @@ ThreatMap* TangibleObjectImplementation::getThreatMap() {
 
 	return threatMap;
 }
+bool TangibleObjectImplementation::isAttackableBy(TangibleObject* object) {
+	if(object->isCreatureObject())
+		return isAttackableBy(object->asCreatureObject());
+
+	return false;
+}
 
 bool TangibleObjectImplementation::isAttackableBy(CreatureObject* object) {
 	if (isImperial() && !(object->isRebel())) {
@@ -971,15 +980,15 @@ bool TangibleObjectImplementation::isCityFountain(){
 }
 
 bool TangibleObjectImplementation::isRebel() const {
-	return faction == FactionManager::FACTIONREBEL;
+	return faction == Factions::FACTIONREBEL;
 }
 
 bool TangibleObjectImplementation::isImperial() const {
-	return faction == FactionManager::FACTIONIMPERIAL;
+	return faction == Factions::FACTIONIMPERIAL;
 }
 
 bool TangibleObjectImplementation::isNeutral() const {
-	return faction == FactionManager::FACTIONNEUTRAL;
+	return faction == Factions::FACTIONNEUTRAL;
 }
 
 TangibleObject* TangibleObject::asTangibleObject() {

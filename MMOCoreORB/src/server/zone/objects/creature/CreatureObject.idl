@@ -23,7 +23,7 @@ import system.lang.Time;
 import server.zone.Zone;
 import system.util.SortedVector;
 import server.zone.objects.creature.events.DizzyFallDownEvent;
-import server.zone.templates.SharedObjectTemplate;
+include templates.SharedObjectTemplate;
 import server.zone.objects.creature.buffs.Buff;
 import server.zone.objects.tangible.weapon.WeaponObject;
 import server.zone.ZoneClientSession;
@@ -37,8 +37,8 @@ include server.zone.objects.creature.variables.SkillList;
 include server.zone.objects.creature.variables.SkillModList;
 include server.zone.objects.creature.variables.SkillModEntry;
 include server.zone.objects.creature.variables.CommandQueueAction;
-include server.zone.objects.creature.CreaturePosture;
-include server.zone.objects.creature.CreatureState;
+include templates.params.creature.CreaturePosture;
+include templates.params.creature.CreatureState;
 include server.zone.objects.creature.SpeedMultiplierModChanges;
 include server.zone.objects.creature.variables.Skill;
 include server.zone.objects.creature.variables.WearablesDeltaVector;
@@ -117,7 +117,7 @@ class CreatureObject extends TangibleObject {
 	protected byte moodID;
 	protected int performanceCounter;
 	protected int instrumentID;
-
+	
 	@dereferenced
 	protected DeltaVector<int> hamList;
 
@@ -241,6 +241,12 @@ class CreatureObject extends TangibleObject {
 	 */
 	public native void initializeTransientMembers();
 
+	@preLocked
+	public abstract void setCountdownTimer(unsigned int newCount, boolean notifyClient = true) {
+		super.setCountdownTimer(newCount, notifyClient);
+		cooldownTimerMap.updateToCurrentAndAddMili("incapTimer", getUseCount()*1000);
+	}
+		
 	/**
 	 * Sends a CommandQueueRemove ObjectControllerMessage to the owner client of this object
 	 * @pre { }
@@ -366,11 +372,11 @@ class CreatureObject extends TangibleObject {
 	 * @pre { this object is locked }
 	 * @post {this object is locked, this object has the new posture set }
 	 * @param newPosture posture to set
-	 * @param immedate if set true the client will immediately play the posture animation, should not be used in combat
+	 * @param immediate if set true the client will immediately play the posture animation, should not be used in combat
 	 * 
 	 */
 	@preLocked
-	public native abstract void setPosture(int newPosture, boolean immedate = true, boolean notifyClient = true);
+	public native abstract void setPosture(int newPosture, boolean immediate = true, boolean notifyClient = true);
 	
 	@preLocked
 	public native abstract void updatePostures(boolean immediate = true);
@@ -1059,9 +1065,9 @@ class CreatureObject extends TangibleObject {
 	public native void executeObjectControllerAction(unsigned int actionCRC, unsigned long targetID, final unicode args);
 
 	/**
-	 * Evaluates if this object can be attacket by the passed creature object
-	 * @pre { this object is locked }
-	 * @post { this object is locked }
+	 * Evaluates if this object can be attacked by the passed creature object
+	 * @pre { }
+	 * @post { }
 	 * @return returns true if the creature object can attack this
 	 */
 	@dirty
@@ -1259,6 +1265,18 @@ class CreatureObject extends TangibleObject {
 	public native float calculateBFRatio();
 
 	@preLocked
+	public native void removeFeignedDeath();
+
+	@preLocked
+	public native boolean canFeignDeath();
+
+	@preLocked
+	public native void feignDeath();
+
+	@preLocked
+	public native void setFeignedDeathState();
+
+	@preLocked
 	public native void setDizziedState(int durationSeconds = 5);
 
 	@preLocked
@@ -1315,6 +1333,11 @@ class CreatureObject extends TangibleObject {
 	public void removeAttackDelay() {
 		cooldownTimerMap.updateToCurrentTime("nextAttackDelay");
 	}
+	
+	@dirty
+	public boolean hasIncapTimer() {
+		return !cooldownTimerMap.isPast("incapTimer");
+	}
 
 	@local
 	public CooldownTimerMap getCooldownTimerMap() {
@@ -1365,6 +1388,11 @@ class CreatureObject extends TangibleObject {
 	public boolean checkKnockdownRecovery() {
 		return cooldownTimerMap.isPast("knockdownRecovery");
 	}
+	
+	
+	// Updates directional arrows and planet names for group members out of range
+	@dirty 
+	public native void updateGroupMFDPositions();
 
 	// misc methods
 	@preLocked
@@ -1431,7 +1459,7 @@ class CreatureObject extends TangibleObject {
 	public native void doAnimation(final string animation);
 
 	@dirty
-	public native void doCombatAnimation(TangibleObject defender, unsigned int animationCRC, byte hit, byte trails);
+	public native void doCombatAnimation(TangibleObject defender, unsigned int animationCRC, byte hit, byte trails, unsigned long weaponID=0);
 	
 	@dirty
 	public native void doCombatAnimation(unsigned int animationCRC);
@@ -2008,6 +2036,11 @@ class CreatureObject extends TangibleObject {
 	@read
 	public boolean isOnFire() {
 		return stateBitmask & CreatureState.ONFIRE;
+	}
+	
+	@read
+	public boolean isFeigningDeath() {
+		return stateBitmask & CreatureState.FEIGNDEATH;
 	}
 
 	@read

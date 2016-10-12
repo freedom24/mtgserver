@@ -5,7 +5,7 @@
 #include "server/zone/objects/creature/commands/QueueCommand.h"
 #include "server/zone/objects/creature/ai/AiAgent.h"
 #include "server/zone/objects/creature/ai/DroidObject.h"
-#include "server/zone/objects/scene/ObserverEventType.h"
+#include "templates/params/ObserverEventType.h"
 #include "server/zone/managers/creature/PetManager.h"
 
 class PetGuardCommand : public QueueCommand {
@@ -27,6 +27,9 @@ public:
 
 		if (pet->hasRidingCreature())
 			return GENERALERROR;
+
+		if (pet->getPosture() != CreaturePosture::UPRIGHT && pet->getPosture() != CreaturePosture::KNOCKEDDOWN)
+			pet->setPosture(CreaturePosture::UPRIGHT);
 
 		// Check if droid has power
 		if( controlDevice->getPetType() == PetManager::DROIDPET ){

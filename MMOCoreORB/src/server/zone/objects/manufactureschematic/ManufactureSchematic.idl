@@ -16,7 +16,6 @@ import server.zone.objects.tangible.TangibleObject;
 import server.zone.objects.area.ActiveArea;
 import server.zone.objects.installation.factory.FactoryObject;
 include server.zone.objects.scene.variables.DeltaVector;
-include server.zone.packets.object.ObjectControllerMessage;
 include server.zone.objects.manufactureschematic.ingredientslots.IngredientSlot;
 include server.zone.objects.manufactureschematic.craftingvalues.CraftingValues;
 include server.zone.objects.manufactureschematic.factoryblueprint.FactoryBlueprint;
@@ -35,6 +34,8 @@ class ManufactureSchematic extends IntangibleObject {
 	protected float dataSize;
 	protected int manufactureLimit;
 	protected float complexity;
+
+	@weakReference
 	protected CreatureObject crafter;
 
 	@dereferenced
@@ -153,7 +154,7 @@ class ManufactureSchematic extends IntangibleObject {
 	 * @param player SceneObject that will receive the baselines
 	 */
 	@dirty
-	private native void sendMsco7(SceneObject player);
+	private native void sendMsco7(CreatureObject player);
 
 	/**
 	 * Calls the appropriate UI Listener Function
@@ -163,7 +164,7 @@ class ManufactureSchematic extends IntangibleObject {
 	 * @param value value from packet
 	 */
 	@preLocked
-	public native abstract void synchronizedUIListen(SceneObject player, int value);
+	public native abstract void synchronizedUIListen(CreatureObject player, int value);
 
 	/**
 	 * Calls the appropriate UI Stop Listener Function
@@ -172,7 +173,7 @@ class ManufactureSchematic extends IntangibleObject {
 	 * @param player CreatureObject using the item
 	 * @param value value from packet
 	 */
-	public native abstract void synchronizedUIStopListen(SceneObject player, int value);
+	public native abstract void synchronizedUIStopListen(CreatureObject player, int value);
 
 	@dirty
 	public boolean isManufactureSchematic() {
@@ -254,6 +255,7 @@ class ManufactureSchematic extends IntangibleObject {
 	}
 
 	@read
+	@weakReference
 	public CreatureObject getCrafter() {
 		return crafter;
 	}

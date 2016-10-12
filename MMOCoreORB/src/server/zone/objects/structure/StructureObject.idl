@@ -10,7 +10,7 @@ import server.zone.objects.structure.events.StructureMaintenanceTask;
 import server.zone.objects.scene.SceneObject;
 import server.zone.objects.creature.CreatureObject;
 import server.zone.objects.player.PlayerObject;
-import server.zone.templates.SharedObjectTemplate;
+include templates.SharedObjectTemplate;
 import server.zone.objects.area.ActiveArea;
 import engine.util.u3d.AABBTree;
 import engine.util.u3d.AABBNode;
@@ -294,7 +294,7 @@ class StructureObject extends TangibleObject {
 	public native int getBaseMaintenanceRate();
 	
 	@dirty
-	public native int getBasePowerRate();
+	public abstract native int getBasePowerRate();
 	
 	@read
 	public int getSurplusMaintenance() {

@@ -1,6 +1,6 @@
 sleemo_vandal = Creature:new {
 	objectName = "",
-	customName = "Sleemo Vandal",
+	customName = "a Sleemo Vandal",
 	socialGroup = "sleemo_gang",
 	faction = "",
 	level = 9,
@@ -23,7 +23,7 @@ sleemo_vandal = Creature:new {
 	ferocity = 0,
 	pvpBitmask = ATTACKABLE,
 	creatureBitmask = PACK + HERD,
-	optionsBitmask = 128,
+	optionsBitmask = AIENABLED,
 	diet = HERBIVORE,
 
 	templates = {"object/mobile/dressed_hoodlum_zabrak_female_01.iff"},

@@ -36,7 +36,7 @@
 #include "server/zone/objects/region/CitizenList.h"
 #include "server/zone/objects/building/BuildingObject.h"
 #include "TaxPayMailTask.h"
-#include "server/zone/templates/tangible/SharedStructureObjectTemplate.h"
+#include "templates/tangible/SharedStructureObjectTemplate.h"
 #include "server/zone/objects/player/sui/callbacks/RenameCitySuiCallback.h"
 
 
@@ -190,6 +190,10 @@ void CityManagerImplementation::loadCityRegions() {
 	info("Loaded " + String::valueOf(cities.size()) + " player city regions.", true);
 }
 
+void CityManagerImplementation::stop() {
+	cities.removeAll();
+}
+
 CityRegion* CityManagerImplementation::createCity(CreatureObject* mayor, const String& cityName, float x, float y) {
 	ManagedReference<CityRegion*> city = new CityRegion(true);
 	ObjectManager::instance()->persistObject(city, 1, "cityregions");
@@ -208,7 +212,7 @@ CityRegion* CityManagerImplementation::createCity(CreatureObject* mayor, const S
 	city->rescheduleUpdateEvent(cityUpdateInterval * 60); //Minutes
 
 	StringIdChatParameter params("city/city", "new_city_body");
-	params.setTO(mayor);
+	params.setTO(mayor->getObjectID());
 	UnicodeString subject = "@city/city:new_city_subject"; // New City Established!
 
 	ChatManager* chatManager = zoneServer->getChatManager();
@@ -582,7 +586,7 @@ void CityManagerImplementation::withdrawFromCityTreasury(CityRegion* city, Creat
 
 	StringIdChatParameter emailBody("@city/city:treasury_withdraw_body");
 	emailBody.setDI(value);
-	emailBody.setTO(mayor);
+	emailBody.setTO(mayor->getObjectID());
 	emailBody.setTT(reason);
 
 	sendMail(city, "@city/city:treasury_withdraw_from", "@city/city:treasury_withdraw_subject", emailBody, NULL);
@@ -832,10 +836,6 @@ void CityManagerImplementation::deductCityMaintenance(CityRegion* city) {
 
 	Locker _lock(city);
 
-	TemplateManager* templateManager = TemplateManager::instance();
-	if (templateManager == NULL)
-		return;
-
 	// pay city hall maintenanance first
 	ManagedReference<StructureObject*> ch = city->getCityHall();
 
@@ -1034,7 +1034,7 @@ void CityManagerImplementation::sendMaintenanceEmail(CityRegion* city, int maint
 			*/
 			StringIdChatParameter emailBody("@city/city:city_maint_body");
 			emailBody.setDI(maint);
-			emailBody.setTO(mayor);
+			emailBody.setTO(mayor->getObjectID());
 
 			Locker clock(mayor, city);
 			ChatManager* chatManager = zoneServer->getChatManager();
@@ -1053,7 +1053,7 @@ void CityManagerImplementation::sendMaintenanceRepairEmail(CityRegion* city, Str
 			"structure_repaired_subject", "Structure Repaired"
 			*/
 			StringIdChatParameter emailBody("@city/city:structure_repaired_body");
-			emailBody.setTO(mayor);
+			emailBody.setTO(mayor->getObjectID());
 			emailBody.setTT(structure->getObjectName()->getFullPath());
 
 			Locker clock(mayor, city);
@@ -1074,7 +1074,7 @@ void CityManagerImplementation::sendMaintenanceDecayEmail(CityRegion* city, Stru
 			*/
 			StringIdChatParameter emailBody("@city/city:structure_damaged_body");
 			emailBody.setTO(structure->getObjectName()->getFullPath());
-			emailBody.setTT(mayor);
+			emailBody.setTT(mayor->getObjectID());
 			emailBody.setDI(maintenanceDue);
 
 			Locker clock(mayor, city);
@@ -1094,7 +1094,7 @@ void CityManagerImplementation::sendMaintenanceDestroyEmail(CityRegion* city, Sc
 			"structure_destroyed_maint_subject", "Insufficient Maintenance, Structure DESTROYED"
 			*/
 			StringIdChatParameter emailBody("@city/city:structure_destroyed_maint_body");
-			emailBody.setTO(mayor);
+			emailBody.setTO(mayor->getObjectID());
 			emailBody.setTT(object->getObjectName()->getFullPath());
 
 			Locker clock(mayor, city);
@@ -1313,6 +1313,8 @@ void CityManagerImplementation::expandCity(CityRegion* city) {
 	if (zone == NULL)
 		return;
 
+	bool rankCapped = isCityRankCapped(zone->getZoneName(), newRank);
+
 	ManagedReference<SceneObject*> obj = zoneServer->getObject(city->getMayorID());
 
 	if (obj != NULL && obj->isPlayerCreature()) {
@@ -1325,19 +1327,22 @@ void CityManagerImplementation::expandCity(CityRegion* city) {
 
 		UnicodeString subject = "@city/city:city_expand_subject"; // City Expansion!
 
-		if (isCityRankCapped(zone->getZoneName(), newRank)) {
+		if (rankCapped) {
 			params.setStringId("city/city", "city_expand_cap_body");
 			subject = "@city/city:city_expand_cap_subject"; // City Expansion Capped!
-			newRank = currentRank;
 		}
 
 		ChatManager* chatManager = zoneServer->getChatManager();
 		chatManager->sendMail("@city/city:new_city_from", subject, params, mayor->getFirstName(), NULL);
 	}
 
-	city->setCityRank(newRank);
-	city->setRadius(radiusPerRank.get(newRank - 1));
-	city->sendStructureValidMails();
+	if (rankCapped) {
+		city->destroyAllStructuresForRank(newRank, true);
+	} else {
+		city->setCityRank(newRank);
+		city->setRadius(radiusPerRank.get(newRank - 1));
+		city->sendStructureValidMails();
+	}
 }
 
 void CityManagerImplementation::destroyCity(CityRegion* city) {
@@ -1921,10 +1926,6 @@ void CityManagerImplementation::sendMaintenanceReport(CityRegion* city, Creature
 
 	PlayerObject* ghost = creature->getPlayerObject();
 	if (ghost == NULL)
-		return;
-
-	TemplateManager* templateManager = TemplateManager::instance();
-	if (templateManager == NULL)
 		return;
 
 	int totalcost = 0;

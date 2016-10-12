@@ -97,12 +97,12 @@ void ThreatMap::addDamage(CreatureObject* target, uint32 damage, String xp) {
 	}
 }
 
-void ThreatMap::removeAll() {
+void ThreatMap::removeAll(bool forceRemoveAll) {
 	Locker locker(&lockMutex);
 
 	removeObservers();
 
-	for (int i = 0; i < size(); i++) {
+	for (int i = size() - 1; i >= 0; i--) {
 		VectorMapEntry<ManagedReference<CreatureObject*> , ThreatMapEntry> *entry = &elementAt(i);
 
 		ManagedReference<CreatureObject*> key = entry->getKey();
@@ -117,7 +117,7 @@ void ThreatMap::removeAll() {
 		uint32 keyPlanetCRC = (keyZone != NULL ? keyZone->getPlanetCRC() : 0);
 		uint32 selfPlanetCRC = (selfZone != NULL ? selfZone->getPlanetCRC() : 0);
 
-		if (key == NULL || selfStrong == NULL || key->isDead() || !key->isOnline() || keyPlanetCRC != selfPlanetCRC) {
+		if (key == NULL || selfStrong == NULL || key->isDead() || !key->isOnline() || keyPlanetCRC != selfPlanetCRC || forceRemoveAll) {
 			remove(i);
 
 			if (threatMapObserver != NULL)
@@ -286,7 +286,7 @@ CreatureObject* ThreatMap::getHighestDamagePlayer() {
 	return player;
 }
 
-CreatureObject* ThreatMap::getHighestDamageGroupLeader(){
+CreatureObject* ThreatMap::getHighestDamageGroupLeader() {
 
 	Locker locker(&lockMutex);
 
@@ -304,25 +304,24 @@ CreatureObject* ThreatMap::getHighestDamageGroupLeader(){
 
 		CreatureObject* creature = elementAt(i).getKey();
 		//tlog.info("Group id is " + String::valueOf(creature->getGroupID()),true);
-		if(creature->isGrouped()){
+		if (creature->isGrouped()) {
 
-			Reference<CreatureObject*> thisleader = (creature->getGroup()->getLeader()).castTo<CreatureObject*>();
+			Reference<CreatureObject*> thisleader = creature->getGroup()->getLeader();
 			//tlog.info("leader is " + thisleader->getFirstName(),true);
 
-			if(thisleader == NULL || !thisleader->isPlayerCreature())
+			if (thisleader == NULL || !thisleader->isPlayerCreature())
 				break;
 
-			if(!groupDamageMap.contains(creature->getGroupID())){
+			if (!groupDamageMap.contains(creature->getGroupID())) {
 				//tlog.info("first dmg for group " + String::valueOf(creature->getGroupID()) + " dmg: " + String::valueOf(totalDamage), true);
 				groupDamageMap.put(creature->getGroupID(),totalDamage);
 
 			} else {
 				groupDamageMap.get(creature->getGroupID()) += totalDamage;
 				//tlog.info("adding to group " + String::valueOf(creature->getGroupID()) + "  dmg total: " + String::valueOf(groupDamageMap.get(creature->getGroupID())) + " this player dmg: " + String::valueOf(totalDamage),true);
-
 			}
 
-			if(groupDamageMap.get(creature->getGroupID()) > highestGroupDmg){
+			if (groupDamageMap.get(creature->getGroupID()) > highestGroupDmg) {
 				highestGroupDmg = groupDamageMap.get(creature->getGroupID());
 				leaderCreature = thisleader;
 			}
@@ -331,29 +330,29 @@ CreatureObject* ThreatMap::getHighestDamageGroupLeader(){
 
 			if (owner != NULL && owner->isPlayerCreature()) {
 				if (owner->isGrouped()) {
-					Reference<CreatureObject*> thisleader = (owner->getGroup()->getLeader()).castTo<CreatureObject*>();
+					Reference<CreatureObject*> thisleader = owner->getGroup()->getLeader();
 
-					if(thisleader == NULL || !thisleader->isPlayerCreature())
+					if (thisleader == NULL || !thisleader->isPlayerCreature())
 						break;
 
-					if(!groupDamageMap.contains(owner->getGroupID())){
+					if (!groupDamageMap.contains(owner->getGroupID())) {
 						groupDamageMap.put(owner->getGroupID(),totalDamage);
 					} else {
 						groupDamageMap.get(owner->getGroupID()) += totalDamage;
 					}
 
-					if(groupDamageMap.get(owner->getGroupID()) > highestGroupDmg){
+					if (groupDamageMap.get(owner->getGroupID()) > highestGroupDmg) {
 						highestGroupDmg = groupDamageMap.get(owner->getGroupID());
 						leaderCreature = thisleader;
 					}
 				} else {
-					if(!groupDamageMap.contains(owner->getObjectID())){
+					if (!groupDamageMap.contains(owner->getObjectID())) {
 						groupDamageMap.put(owner->getObjectID(),totalDamage);
 					} else {
 						groupDamageMap.get(owner->getObjectID()) += totalDamage;
 					}
 
-					if(totalDamage > highestGroupDmg) {
+					if (totalDamage > highestGroupDmg) {
 						highestGroupDmg = totalDamage;
 						leaderCreature = owner;
 					}
@@ -362,7 +361,8 @@ CreatureObject* ThreatMap::getHighestDamageGroupLeader(){
 		} else {
 			//tlog.info("adding single creature damage " + String::valueOf(totalDamage),true);
 			groupDamageMap.put(creature->getObjectID(),totalDamage);
-			if(totalDamage > highestGroupDmg) {
+
+			if (totalDamage > highestGroupDmg) {
 				highestGroupDmg = totalDamage;
 				leaderCreature = creature;
 			}

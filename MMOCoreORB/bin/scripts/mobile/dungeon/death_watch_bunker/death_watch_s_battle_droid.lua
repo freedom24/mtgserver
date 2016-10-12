@@ -22,7 +22,7 @@ death_watch_s_battle_droid = Creature:new {
 	ferocity = 0,
 	pvpBitmask = AGGRESSIVE + ATTACKABLE + ENEMY,
 	creatureBitmask = KILLER,
-	optionsBitmask = 128,
+	optionsBitmask = AIENABLED,
 	diet = NONE,
 	scale = 1.40,
 
@@ -40,7 +40,7 @@ death_watch_s_battle_droid = Creature:new {
 	},
 	conversationTemplate = "",
 	defaultWeapon = "object/weapon/ranged/droid/droid_droideka_ranged.iff",
-	defaultAttack = "creaturerangedattack"
+	defaultAttack = "attack"
 }
 
 CreatureTemplates:addCreatureTemplate(death_watch_s_battle_droid, "death_watch_s_battle_droid")

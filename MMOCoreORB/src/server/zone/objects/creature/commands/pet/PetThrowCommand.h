@@ -7,7 +7,7 @@
 #include "server/zone/objects/creature/ai/DroidObject.h"
 #include "server/zone/objects/creature/CreatureObject.h"
 #include "server/zone/objects/tangible/components/droid/DroidTrapModuleDataComponent.h"
-#include "server/zone/templates/tangible/TrapTemplate.h"
+#include "templates/tangible/TrapTemplate.h"
 #include "server/zone/objects/creature/events/DroidTrapTask.h"
 #include "server/zone/managers/crafting/labratories/DroidMechanics.h"
 #include "engine/engine.h"
@@ -26,15 +26,15 @@ public:
 			return GENERALERROR;
 
 		// Droid specific command
-		if( controlDevice->getPetType() != PetManager::DROIDPET )
+		if (controlDevice->getPetType() != PetManager::DROIDPET)
 			return GENERALERROR;
 
 		// droid must have a trap module
 		ManagedReference<DroidObject*> droid = cast<DroidObject*>(creature);
-		if( droid == NULL )
+		if (droid == NULL)
 			return GENERALERROR;
 
-		// we nee the owner
+		// we need the owner
 		ManagedReference<CreatureObject*> owner = droid->getLinkedCreature();
 
 		if (owner == NULL)
@@ -43,7 +43,7 @@ public:
 		Locker olock(owner, creature);
 
 		DroidTrapModuleDataComponent* module = cast<DroidTrapModuleDataComponent*>(droid->getModule("trap_module"));
-		if(module == NULL) {
+		if (module == NULL) {
 			return GENERALERROR;
 		}
 
@@ -55,7 +55,7 @@ public:
 		}
 
 		// trap must have charges
-		if(trap->getUseCount() <= 0) {
+		if (trap->getUseCount() <= 0) {
 			droid->showFlyText("npc_reaction/flytext","confused", 204, 0, 0);  // "?!!?!?!"
 			return GENERALERROR;
 		}
@@ -64,36 +64,39 @@ public:
 		Reference<CreatureObject*> target = server->getZoneServer()->getObject(targetID, true).castTo<CreatureObject*>();
 		if (target == NULL || !target->isCreature()) {
 			droid->showFlyText("npc_reaction/flytext","confused", 204, 0, 0);  // "?!!?!?!"
-			return GENERALERROR;
+			owner->sendSystemMessage("@pet/droid_modules:invalid_trap_target"); // "That is not a valid target."
+			return INVALIDTARGET;
 		}
 
 		// target must be attackable
 		if (!(target->getPvpStatusBitmask() & CreatureFlag::ATTACKABLE)) {
 			droid->showFlyText("npc_reaction/flytext","confused", 204, 0, 0);  // "?!!?!?!"
-			return GENERALERROR;
+			owner->sendSystemMessage("@pet/droid_modules:invalid_trap_target"); // "That is not a valid target."
+			return INVALIDTARGET;
 		}
 
 		// Check range to target
-		if (!droid->isInRange(target, 64.0f)){ // traps via launcher get their own range
+		if (!checkDistance(droid, target, 64.0f)) { // traps via launcher get their own range
 			droid->showFlyText("npc_reaction/flytext","confused", 204, 0, 0);  // "?!!?!?!"
-			return GENERALERROR;
+			owner->sendSystemMessage("@pet/droid_modules:target_too_far"); // "That target is out of range."
+			return TOOFAR;
 		}
 
 		// check droid state
-		if( droid->getLocalZone() == NULL ){  // Not outdoors
+		if (droid->getLocalZone() == NULL) {  // Not outdoors
 			ManagedReference<SceneObject*> parent = droid->getParent();
-			if( parent == NULL || !parent->isCellObject() ){ // Not indoors either
+			if (parent == NULL || !parent->isCellObject()) { // Not indoors either
 				return GENERALERROR;
 			}
 		}
 
 		// droid must not be dead or incapped
-		if(droid->isIncapacitated() || droid->isDead()) {
+		if (droid->isIncapacitated() || droid->isDead()) {
 			return GENERALERROR;
 		}
 
 		// Check if droid has power
-		if( !droid->hasPower() ){
+		if (!droid->hasPower()) {
 			droid->showFlyText("npc_reaction/flytext","low_power", 204, 0, 0);  // "*Low Power*"
 			return GENERALERROR;
 		}
@@ -117,20 +120,21 @@ public:
 
 			// No skill Check
 			int trappingSkill = owner->getSkillMod("trapping");
-			if(trappingSkill < 1) {
+			if (trappingSkill < 1) {
 				owner->sendSystemMessage("@pet/droid_modules:insufficient_skill");
 				return GENERALERROR;
 			}
 
 			/// Skill too low check the player must be able to use the trap
-			if(trappingSkill < trapData->getSkillRequired()) {
+			if (trappingSkill < trapData->getSkillRequired()) {
 				owner->sendSystemMessage("@pet/droid_modules:insufficient_skill");
 				return GENERALERROR;
 			}
 
 			int trapBonus = module->getTrapBonus();
-			// trapping skill gets modified by the droids trap bonus
+			// trapping skill gets modified by the droid's trap bonus
 			int bonus = DroidMechanics::determineDroidSkillBonus(trappingSkill,trapBonus,trappingSkill);
+
 			if (trapBonus > trappingSkill)
 				trappingSkill += bonus;
 			else
@@ -141,7 +145,8 @@ public:
 
 			int targetDefense = target->getSkillMod(trapData->getDefenseMod());
 			Time* cooldown = droid->getCooldownTime("throwtrap");
-			if((cooldown != NULL && !cooldown->isPast()) || (droid->getPendingTask("throwtrap") != NULL)) {
+
+			if (cooldown != NULL && !cooldown->isPast()) {
 				StringIdChatParameter msg;
 				msg.setStringId("@pet/droid_modules:cant_throw_yet");
 				Time now;
@@ -150,8 +155,9 @@ public:
 				owner->sendSystemMessage(msg);
 				return GENERALERROR;
 			}
+
 			// place droid and owner in combat
-			if(!CombatManager::instance()->startCombat(droid, target))
+			if (!CombatManager::instance()->startCombat(droid, target))
 				return GENERALERROR;
 
 			float hitChance = CombatManager::instance()->hitChanceEquation(trappingSkill, System::random(199) + 1, targetDefense, System::random(199) + 1);
@@ -170,6 +176,7 @@ public:
 			CombatAction* action = new CombatAction(droid, target, crc, hit, 0L);
 			creature->broadcastMessage(action, true);
 			creature->addCooldown("throwtrap", 5000); // 5s cooldown on droid throwing traps
+
 			// power usage for throw
 			droid->usePower(1);
 			// let module handle decrment so it can clear the trap when its out of charges
@@ -180,54 +187,41 @@ public:
 			int damage = 0;
 
 			if (hit) {
-
 				message.setStringId("trap/trap" , trapData->getSuccessMessage());
 
 				buff = new Buff(target, crc, trapData->getDuration(), BuffType::STATE);
 
 				Locker locker(buff);
 
-				if(state != 0)
+				if (state != 0)
 					buff->addState(state);
 
 				VectorMap<String, int>* skillMods = trapData->getSkillMods();
-				for(int i = 0; i < skillMods->size(); ++i) {
+				for (int i = 0; i < skillMods->size(); ++i) {
 					buff->setSkillModifier(skillMods->elementAt(i).getKey(), skillMods->get(i));
 				}
 
 				String startSpam = trapData->getStartSpam();
-				if(!startSpam.isEmpty())
+				if (!startSpam.isEmpty())
 					buff->setStartFlyText("trap/trap", startSpam,  0, 0xFF, 0);
 
 				String stopSpam = trapData->getStopSpam();
-				if(!stopSpam.isEmpty())
+				if (!stopSpam.isEmpty())
 					buff->setEndFlyText("trap/trap", stopSpam,  0xFF, 0, 0);
 
 				damage = System::random(trapData->getMaxDamage() - trapData->getMinDamage()) + trapData->getMinDamage();
 
 			} else {
-				if(!trapData->getFailMessage().isEmpty()) {
+				if (!trapData->getFailMessage().isEmpty()) {
 					message.setStringId("trap/trap" , trapData->getFailMessage());
 				}
 			}
 
 			message.setTT(target->getDisplayedName());
 
-
 			Reference<DroidTrapTask*> trapTask = new DroidTrapTask(owner, target, droid, buff, message, trapData->getPoolToDamage(), damage, hit);
 			droid->addPendingTask("throwtrap", trapTask, 2300);
 
-			// droid dont take ham damage for use as far as i know i.e. no mention of it
-			/*
-			//Reduce cost based upon player's strength, quickness, and focus if any are over 300
-				int healthCost = droid->calculateCostAdjustment(CreatureAttribute::STRENGTH, trapData->getHealthCost());
-				int actionCost = droid->calculateCostAdjustment(CreatureAttribute::QUICKNESS, trapData->getActionCost());
-				int mindCost = droid->calculateCostAdjustment(CreatureAttribute::FOCUS, trapData->getMindCost());
-
-				droid->inflictDamage(droid, CreatureAttribute::HEALTH, healthCost, false);
-				droid->inflictDamage(droid, CreatureAttribute::ACTION, actionCost, false);
-				droid->inflictDamage(droid, CreatureAttribute::MIND, mindCost, false);
-			*/
 			return SUCCESS;
 
 		} catch (Exception& e) {
@@ -236,8 +230,6 @@ public:
 
 		return GENERALERROR;
 	}
-
 };
-
 
 #endif /* PETTHROWCOMMAND_H_ */

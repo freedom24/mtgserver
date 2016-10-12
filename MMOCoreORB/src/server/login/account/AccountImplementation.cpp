@@ -9,6 +9,11 @@
 #include "../objects/GalaxyBanEntry.h"
 
 AccountImplementation::AccountImplementation() {
+	initializeTransientMembers();
+}
+
+
+void AccountImplementation::initializeTransientMembers() {
 	active = false;
 	accountID = 0;
 	stationID = 0;
@@ -18,12 +23,30 @@ AccountImplementation::AccountImplementation() {
 	banAdmin = 0;
 }
 
+
 void AccountImplementation::updateFromDatabase() {
 
+	Locker locker(_this.getReferenceUnsafeStaticCast());
 	updateAccount();
 	updateCharacters();
 	updateGalaxyBans();
+}
 
+Reference<GalaxyAccountInfo*> AccountImplementation::getGalaxyAccountInfo(const String& galaxyName) {
+
+	Reference<GalaxyAccountInfo*> info = galaxyAccountInfo.get(galaxyName);
+
+	if(info == NULL) {
+		info = new GalaxyAccountInfo();
+		
+		galaxyAccountInfo.put(galaxyName, info);
+	}
+
+	return info;
+}
+
+void AccountImplementation::addGalaxyBan(GalaxyBanEntry* ban, uint32 galaxy) {
+	galaxyBans.put(galaxy, ban);
 }
 
 void AccountImplementation::updateAccount() {
@@ -40,7 +63,7 @@ void AccountImplementation::updateAccount() {
 
 		setActive(result->getBoolean(0));
 		setAdminLevel(result->getInt(1));
-
+		
 		setBanReason(result->getString(2));
 		setBanExpires(result->getUnsignedInt(3));
 		setBanAdmin(result->getUnsignedInt(4));
@@ -108,6 +131,9 @@ CharacterListEntry* AccountImplementation::getCharacterBan(const uint32 galaxy, 
 }
 
 CharacterList* AccountImplementation::getCharacterList() {
+	if(characterList == NULL)
+		updateCharacters();
+	
 	return characterList;
 }
 

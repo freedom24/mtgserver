@@ -13,7 +13,6 @@
 #include "server/zone/packets/object/ObjectMenuResponse.h"
 #include "server/zone/objects/guild/GuildObject.h"
 #include "server/zone/managers/guild/GuildManager.h"
-#include "server/zone/managers/player/PlayerManager.h"
 #include "server/zone/objects/building/BuildingObject.h"
 
 
@@ -241,7 +240,7 @@ int GuildTerminalImplementation::handleObjectMenuSelect(CreatureObject* player, 
 		break;
 	case 192:
 		if (guildObject != NULL) {
-			guildManager->sendGuildChangeNameTo(player, guildObject, _this.getReferenceUnsafeStaticCast());
+			guildManager->sendGuildChangeNameTo(player, guildObject);
 		}
 		break;
 	default:

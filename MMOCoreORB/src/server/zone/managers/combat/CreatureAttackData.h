@@ -39,14 +39,14 @@ protected:
     int coneAngle;
     int areaRange;
 
-    uint32 animationCRC;
+    bool splashDamage;
 
     uint64 targetID;
 
     VectorMap<uint8, StateEffect>* stateEffects;
     Vector<DotEffect>* dotEffects;
 
-	uint8 attackType;
+	bool forceAttack;
 	uint8 trails;
 
 	String combatSpam;
@@ -112,8 +112,13 @@ public:
 		return actionCostMultiplier;
 	}
 
-	uint32 getAnimationCRC() const {
-		return animationCRC;
+
+	void setSplashDamage(bool b) {
+		splashDamage = b;
+	}
+
+	bool isSplashDamage() const {
+		return splashDamage;
 	}
 
 	int getAreaRange() const {
@@ -164,16 +169,12 @@ public:
 		return dotEffects;
 	}
 
-	void setAnimationCRC(uint32 animationCRC) {
-		this->animationCRC = animationCRC;
+	bool isForceAttack() const {
+		return forceAttack;
 	}
 
-	uint8 getAttackType() const {
-		return attackType;
-	}
-
-	void setAttackType(uint8 attackType) {
-		this->attackType = attackType;
+	void setForceAttack(bool forceAttack) {
+		this->forceAttack = forceAttack;
 	}
 
 	uint8 getTrails() const {

@@ -20,13 +20,12 @@ import engine.service.proto.BasePacket;
 import engine.service.proto.BaseMessage;
 import system.util.SortedVector;
 import system.lang.StackTrace;
-import server.zone.managers.objectcontroller.ObjectController;
 import system.lang.ref.Reference;
 import engine.core.Task;
 import engine.util.u3d.Vector3;
 include engine.util.Facade;
 import engine.util.Observable;
-include server.zone.objects.scene.ObserverEventType;
+include templates.params.ObserverEventType;
 include server.zone.ZoneReference;
 include server.zone.objects.scene.SceneObjectType;
 import server.zone.ZoneProcessServer;
@@ -43,9 +42,9 @@ include server.zone.objects.scene.TransferErrorCode;
 include server.zone.objects.scene.variables.PendingTasksMap;
 include server.zone.objects.scene.SessionFacadeType;
 include server.zone.objects.scene.ObserverType;
-include server.zone.managers.templates.PlanetMapCategory;
-include server.zone.managers.templates.TemplateManager;
-import server.zone.templates.SharedObjectTemplate;
+include templates.manager.PlanetMapCategory;
+include templates.manager.TemplateManager;
+include templates.SharedObjectTemplate;
 import server.zone.objects.area.ActiveArea;
 include server.zone.objects.scene.components.ZoneComponent;
 include server.zone.objects.scene.components.ObjectMenuComponent;
@@ -54,7 +53,6 @@ include server.zone.objects.scene.components.AttributeListComponent;
 include server.zone.objects.scene.components.DataObjectComponentReference;
 include server.zone.objects.scene.variables.ContainerPermissions;
 import server.zone.objects.region.CityRegion;
-import server.zone.objects.creature.CreatureObject;
 import engine.util.u3d.Matrix4;
 import system.thread.ReadWriteLock;
 import system.thread.Mutex;
@@ -153,6 +151,7 @@ class SceneObject extends QuadTreeEntry implements Logger {
 	}
 	
 	public native void initializePrivateData();
+	
 
 	/**
 	 * Reads and sets the template data from a SharedObjectTemplate LuaObject
@@ -162,9 +161,21 @@ class SceneObject extends QuadTreeEntry implements Logger {
 	 */
 	@local
 	public abstract native void loadTemplateData(SharedObjectTemplate templateData);
-	
+
+
+	/**
+	* Acts as a copy constructor for ManagedObjects. This function will be invoked by the cloneObject function in the object manager.
+	* @pre { objectToClone is a valid pointer }
+	* @post { SceneObject members are properly initialized using data from objectToClone }
+	* @param objectToClone objectToClone is the source object being used to clone into the current SceneObject
+	*/
+	public abstract void onCloneObject(SceneObject objectToClone) {
+		//TODO: Move container clone and other sceno cases here
+	}
+
 	public abstract native void createComponents();
 	public abstract native void createContainerComponent();
+	public abstract native void createObjectMenuComponent();
 
 	/**
 	 * Initializes the transient members of SceneObject, must call the inherited object method first.
@@ -275,6 +286,9 @@ class SceneObject extends QuadTreeEntry implements Logger {
 	public abstract int notifyObjectRemovedFromChild(SceneObject object, SceneObject child) {
 		return 0;
 	}
+
+	@reference
+	public native abstract SceneObject getCraftedComponentsSatchel();
 	
 	/**
 	 * Calls the appropriate UI Listener Function
@@ -284,7 +298,7 @@ class SceneObject extends QuadTreeEntry implements Logger {
 	 * @param value value from packet
 	 */
 	@dirty
-	public abstract void synchronizedUIListen(SceneObject player, int value) {
+	public abstract void synchronizedUIListen(CreatureObject player, int value) {
 		Logger.info("Unhandled synchronizedUIListen", true);
 	}
 	
@@ -296,7 +310,7 @@ class SceneObject extends QuadTreeEntry implements Logger {
 	 * @param value value from packet
 	 */
 	@dirty
-	public abstract void synchronizedUIStopListen(SceneObject player, int value) {
+	public abstract void synchronizedUIStopListen(CreatureObject player, int value) {
 		Logger.info("Unhandled synchronizedUIStopListen", true);
 	}
 	
@@ -715,6 +729,11 @@ class SceneObject extends QuadTreeEntry implements Logger {
 		synchronized (containerLock) {
 			if (pendingTasks == null)
 				return;
+
+			Task task = pendingTasks.get(name);
+
+			if (task != null && task.isScheduled())
+				task.cancel();
 
 			pendingTasks.drop(name);
 		}
@@ -1552,7 +1571,12 @@ class SceneObject extends QuadTreeEntry implements Logger {
 	public abstract boolean isFactoryCrate() {
 		return false;
 	}
-	
+
+	@dirty
+	public abstract boolean isPharmaceuticalObject() {
+		return false;
+	}
+
 	@read
 	public boolean isFishingPoleObject() {
 		return gameObjectType == SceneObjectType.FISHINGPOLE;

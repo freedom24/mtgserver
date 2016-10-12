@@ -10,7 +10,6 @@
 #include "server/zone/objects/creature/CreatureObject.h"
 #include "server/zone/objects/player/PlayerObject.h"
 #include "server/zone/objects/intangible/VehicleControlDevice.h"
-#include "server/zone/objects/building/BuildingObject.h"
 #include "server/zone/Zone.h"
 #include "server/zone/objects/player/sui/listbox/SuiListBox.h"
 #include "server/zone/managers/planet/PlanetManager.h"
@@ -19,7 +18,7 @@
 #include "server/zone/objects/region/CityRegion.h"
 #include "server/zone/objects/creature/sui/RepairVehicleSuiCallback.h"
 #include "server/zone/objects/region/CityRegion.h"
-#include "server/zone/templates/customization/AssetCustomizationManagerTemplate.h"
+#include "templates/customization/AssetCustomizationManagerTemplate.h"
 
 
 void VehicleObjectImplementation::fillObjectMenuResponse(ObjectMenuResponse* menuResponse, CreatureObject* player) {
@@ -239,7 +238,7 @@ int VehicleObjectImplementation::healDamage(TangibleObject* healer, int damageTy
 	return TangibleObjectImplementation::healDamage(healer, damageType, damage, notifyClient);
 }
 
-int VehicleObjectImplementation::notifyObjectDestructionObservers(TangibleObject* attacker, int condition) {
+int VehicleObjectImplementation::notifyObjectDestructionObservers(TangibleObject* attacker, int condition, bool isCombatAction) {
 	unlock();
 
 	ManagedReference<CreatureObject* > linkedCreature = this->linkedCreature.get();

@@ -7,8 +7,7 @@
 
 
 #include "server/zone/objects/scene/SceneObject.h"
-#include "server/zone/objects/creature/CreatureAttribute.h"
-#include "server/chat/ChatManager.h"
+#include "templates/params/creature/CreatureAttribute.h"
 #include "server/zone/managers/stringid/StringIdManager.h"
 #include "server/zone/managers/combat/CombatManager.h"
 #include "server/zone/managers/collision/CollisionManager.h"
@@ -37,7 +36,8 @@ public:
 		STUN = 1,
 		DIZZY = 2,
 		BLIND = 4,
-		INTIMIDATE = 8
+		INTIMIDATE = 8,
+		FEIGNDEATH = 16
 	};
 
 	enum {

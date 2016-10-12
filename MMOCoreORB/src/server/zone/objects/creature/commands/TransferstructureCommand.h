@@ -8,7 +8,7 @@
 #include "server/zone/objects/scene/SceneObject.h"
 #include "server/zone/managers/city/CityManager.h"
 #include "server/zone/managers/player/PlayerManager.h"
-#include "server/zone/templates/tangible/SharedStructureObjectTemplate.h"
+#include "templates/tangible/SharedStructureObjectTemplate.h"
 
 class TransferstructureCommand : public QueueCommand {
 public:
@@ -28,7 +28,8 @@ public:
 
 		ManagedReference<PlayerManager*> playerManager = server->getPlayerManager();
 
-		ManagedReference<SceneObject*> obj = playerManager->getInRangeStructureWithAdminRights(creature);
+		uint64 targetid = creature->getTargetID();
+		ManagedReference<SceneObject*> obj = playerManager->getInRangeStructureWithAdminRights(creature, targetid);
 
 		if (obj == NULL || !obj->isStructureObject()) {
 			creature->sendSystemMessage("@player_structure:command_no_building"); //You must be in a building or near an installation to use that command.
@@ -72,7 +73,7 @@ public:
 					if(obj == NULL)
 						continue;
 
-					if(obj->isNoTrade() || obj->containsNoTradeObjectRecursive()) {
+					if((obj->isNoTrade() || obj->containsNoTradeObjectRecursive()) && !obj->isVendor()) {
 						StringIdChatParameter param("@player_structure:building_has_notrade"); // The object %TT may not be traded and must be put in your inventory or destroyed before the building can be transferred.
 						param.setTT(obj->getDisplayedName());
 						creature->sendSystemMessage(param);
@@ -109,7 +110,7 @@ public:
 
 		if (abilityRequired != "" && !ghost->hasAbility(abilityRequired)) {
 			StringIdChatParameter params("@player_structure:not_able_to_own"); //%NT is not able to own this structure.
-			params.setTT(targetCreature);
+			params.setTT(targetCreature->getObjectID());
 			creature->sendSystemMessage(params);
 			return GENERALERROR;
 		}
@@ -152,7 +153,7 @@ public:
 			if ( !bForceTransfer) {
 				System::out << "lotsize: " << lotSize << endl;
 				StringIdChatParameter params("@player_structure:not_able_to_own"); //%NT is not able to own this structure.
-				params.setTT(targetCreature);
+				params.setTT(targetCreature->getObjectID());
 				creature->sendSystemMessage(params);
 			} else {
 

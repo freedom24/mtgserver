@@ -1,15 +1,14 @@
 #include "HeroRingMenuComponent.h"
 #include "server/zone/objects/creature/CreatureObject.h"
-#include "server/zone/objects/creature/CreatureAttribute.h"
+#include "templates/params/creature/CreatureAttribute.h"
 #include "server/zone/objects/tangible/wearables/WearableObject.h"
 #include "server/zone/objects/player/PlayerObject.h"
-#include "server/zone/managers/player/PlayerManager.h"
 #include "server/zone/objects/scene/components/ObjectMenuComponent.h"
 #include "server/zone/packets/object/ObjectMenuResponse.h"
 #include "server/zone/objects/tangible/components/HeroRingDataComponent.h"
 #include "server/zone/packets/object/PlayClientEffectObjectMessage.h"
 
-void HeroRingMenuComponent::fillObjectMenuResponse(SceneObject* sceneObject, ObjectMenuResponse* menuResponse, CreatureObject* player) {
+void HeroRingMenuComponent::fillObjectMenuResponse(SceneObject* sceneObject, ObjectMenuResponse* menuResponse, CreatureObject* player) const {
 
 	TangibleObjectMenuComponent::fillObjectMenuResponse(sceneObject, menuResponse, player);
 
@@ -28,7 +27,7 @@ void HeroRingMenuComponent::fillObjectMenuResponse(SceneObject* sceneObject, Obj
 
 }
 
-int HeroRingMenuComponent::handleObjectMenuSelect(SceneObject* sceneObject, CreatureObject* player, byte selectedID) {
+int HeroRingMenuComponent::handleObjectMenuSelect(SceneObject* sceneObject, CreatureObject* player, byte selectedID) const {
 
 	if (selectedID == 20) { // Restore Life
 
@@ -71,6 +70,8 @@ int HeroRingMenuComponent::handleObjectMenuSelect(SceneObject* sceneObject, Crea
 		player->healDamage(player, CreatureAttribute::HEALTH, 200);
 		player->healDamage(player, CreatureAttribute::ACTION, 200);
 		player->healDamage(player, CreatureAttribute::MIND, 200);
+		
+		player->removeFeignedDeath();
 
 		data->setCharges(charges - 1);
 
@@ -94,7 +95,7 @@ int HeroRingMenuComponent::handleObjectMenuSelect(SceneObject* sceneObject, Crea
 
 }
 
-String HeroRingMenuComponent::getCooldownString(uint32 delta) {
+String HeroRingMenuComponent::getCooldownString(uint32 delta) const {
 
 	int seconds = delta / 1000;
 

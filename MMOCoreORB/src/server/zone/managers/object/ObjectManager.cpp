@@ -14,17 +14,18 @@
 
 #include "server/zone/Zone.h"
 #include "server/zone/ZoneProcessServer.h"
-#include "server/zone/managers/templates/TemplateManager.h"
-#include "server/zone/managers/objectcontroller/ObjectController.h"
-#include "server/zone/templates/SharedObjectTemplate.h"
-#include "server/chat/ChatManager.h"
+#include "templates/manager/TemplateManager.h"
+#include "templates/SharedObjectTemplate.h"
 #include "engine/db/berkley/BTransaction.h"
 #include "ObjectVersionUpdateManager.h"
 #include "server/ServerCore.h"
 #include "server/zone/objects/scene/SceneObjectType.h"
 #include "DeleteCharactersTask.h"
-#include "server/conf/ConfigManager.h"
+#include "conf/ConfigManager.h"
 #include "server/zone/objects/tangible/wearables/WearableContainerObject.h"
+#include "server/zone/objects/tangible/deed/vetharvester/VetHarvesterDeed.h"
+#include "engine/orb/db/UpdateModifiedObjectsThread.h"
+#include "engine/orb/db/CommitMasterTransactionThread.h"
 
 using namespace engine::db;
 
@@ -62,6 +63,7 @@ ObjectManager::ObjectManager() : DOBObjectManager() {
 	databaseManager->loadObjectDatabase("events", true);
 	databaseManager->loadObjectDatabase("questdata", true);
 	databaseManager->loadObjectDatabase("surveys", true);
+	databaseManager->loadObjectDatabase("accounts", true);
 
 	ObjectDatabaseManager::instance()->commitLocalTransaction();
 
@@ -73,12 +75,7 @@ ObjectManager::ObjectManager() : DOBObjectManager() {
 }
 
 ObjectManager::~ObjectManager() {
-	//info("closing databases...", true);
 
-	//ObjectDatabaseManager::instance()->finalize();
-
-	if (updateModifiedObjectsTask->isScheduled())
-		updateModifiedObjectsTask->cancel();
 }
 
 void ObjectManager::registerObjectTypes() {
@@ -92,7 +89,6 @@ void ObjectManager::registerObjectTypes() {
 	objectFactory.registerObject<FsVillageArea>(SceneObjectType::FSVILLAGEAREA);
 	objectFactory.registerObject<ActiveArea>(SceneObjectType::ACTIVEAREA);
 	objectFactory.registerObject<BadgeActiveArea>(SceneObjectType::BADGEAREA);
-	objectFactory.registerObject<GarageArea>(SceneObjectType::GARAGEAREA);
 	objectFactory.registerObject<MissionSpawnActiveArea>(SceneObjectType::MISSIONSPAWNAREA);
 	objectFactory.registerObject<MissionReconActiveArea>(SceneObjectType::MISSIONRECONAREA);
 	objectFactory.registerObject<SpawnArea>(SceneObjectType::SPAWNAREA);
@@ -229,9 +225,11 @@ void ObjectManager::registerObjectTypes() {
 	objectFactory.registerObject<TravelTerminal>(SceneObjectType::TRAVELTERMINAL);
 	objectFactory.registerObject<GuildTerminal>(SceneObjectType::GUILDTERMINAL);
 	objectFactory.registerObject<Jukebox>(SceneObjectType::JUKEBOX);
+	objectFactory.registerObject<ShuttleBeacon>(SceneObjectType::SHUTTLEBEACON);
 	objectFactory.registerObject<FlagGame>(SceneObjectType::FLAGGAME);
 	objectFactory.registerObject<LotteryDroid>(SceneObjectType::LOTTERYDROID);
 	objectFactory.registerObject<ScavengerChest>(SceneObjectType::SCAVENGERCHEST);
+	objectFactory.registerObject<ScavengerDroid>(SceneObjectType::SCAVENGERDROID);
 	objectFactory.registerObject<GamblingTerminal>(SceneObjectType::GAMBLINGTERMINAL);
 	objectFactory.registerObject<Terminal>(SceneObjectType::CLONING);
 
@@ -243,6 +241,7 @@ void ObjectManager::registerObjectTypes() {
 	objectFactory.registerObject<StructureDeed>(SceneObjectType::INSTALLATIONDEED);
 	objectFactory.registerObject<ResourceDeed>(SceneObjectType::RESOURCEDEED);
 	objectFactory.registerObject<EventPerkDeed>(SceneObjectType::EVENTPERKDEED);
+	objectFactory.registerObject<VetHarvesterDeed>(SceneObjectType::VETHARVESTERDEED);
 
 	objectFactory.registerObject<GroupObject>(SceneObjectType::GROUPOBJECT);
 	objectFactory.registerObject<GuildObject>(SceneObjectType::GUILDOBJECT);
@@ -551,6 +550,7 @@ SceneObject* ObjectManager::loadObjectFromTemplate(uint32 objectCRC) {
 }*/
 
 SceneObject* ObjectManager::cloneObject(SceneObject* object, bool makeTransient) {
+	
 	ObjectOutputStream objectData(500);
 
 	(cast<ManagedObject*>(object))->writeObject(&objectData);
@@ -591,6 +591,41 @@ SceneObject* ObjectManager::cloneObject(SceneObject* object, bool makeTransient)
 	clonedObject->readObject(&objectInput);
 	clonedObject->createComponents();
 	clonedObject->setParent(NULL);
+    
+	VectorMap<String, ManagedReference<SceneObject*> > slottedObjects;
+	clonedObject->getSlottedObjects(slottedObjects);
+    
+	for (int i=slottedObjects.size()-1; i>=0; i--) {
+		String key = slottedObjects.elementAt(i).getKey();
+        
+		Reference<SceneObject*> obj = slottedObjects.elementAt(i).getValue();
+        
+		clonedObject->removeSlottedObject(i);
+        
+		Reference<SceneObject*> clonedChild = cloneObject(obj, makeTransient);
+		clonedChild->setParent(object);
+        
+		slottedObjects.put(key, clonedChild);
+        
+	}
+	
+	VectorMap<uint64, ManagedReference<SceneObject*> > objects;
+	clonedObject->getContainerObjects(objects);
+	
+	for (int i=objects.size()-1; i>=0; i--) {
+		uint64 key = objects.elementAt(i).getKey();
+		
+		Reference<SceneObject*> obj = objects.elementAt(i).getValue();
+		
+		objects.remove(i);
+		
+		Reference<SceneObject*> clonedChild = cloneObject(obj, makeTransient);
+		clonedChild->setParent(object);
+		
+		objects.put(key, clonedChild);
+	}
+	
+	clonedObject->onCloneObject(object);
 
 	if (clonedObject->isPersistent())
 		updatePersistentObject(clonedObject);
@@ -1023,9 +1058,36 @@ void ObjectManager::onCommitData() {
 	}
 
 	//Spawn the delete characters task.
-	if (!deleteCharactersTask->isScheduled()) {
+	if (deleteCharactersTask != NULL && !deleteCharactersTask->isScheduled()) {
 		deleteCharactersTask->updateDeletedCharacters();
 		int mins = ConfigManager::instance()->getPurgeDeletedCharacters();
 		deleteCharactersTask->schedule(mins * 60 * 1000);
 	}
+}
+
+void ObjectManager::cancelDeleteCharactersTask() {
+	if (deleteCharactersTask->isScheduled()) {
+		deleteCharactersTask->cancel();
+	}
+
+	deleteCharactersTask = NULL;
+}
+
+void ObjectManager::stopUpdateModifiedObjectsThreads() {
+	for (int i = updateModifiedObjectsThreads.size() - 1; i >= 0; --i) {
+		engine::ORB::UpdateModifiedObjectsThread* thread = updateModifiedObjectsThreads.get(i);
+		thread->stopWork();
+		delete thread;
+	}
+}
+
+void ObjectManager::shutdown() {
+	stopUpdateModifiedObjectsThreads();
+	CommitMasterTransactionThread::instance()->shutdown();
+	databaseManager->closeDatabases();
+	databaseManager->finalizeInstance();
+	databaseManager = NULL;
+	server = NULL;
+	charactersSaved = NULL;
+	templateManager = NULL;
 }

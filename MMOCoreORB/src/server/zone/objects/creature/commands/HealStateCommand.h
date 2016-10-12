@@ -6,8 +6,8 @@
 #define HEALSTATECOMMAND_H_
 
 #include "server/zone/objects/scene/SceneObject.h"
+#include "server/chat/StringIdChatParameter.h"
 #include "server/zone/objects/tangible/pharmaceutical/StatePack.h"
-#include "server/zone/objects/tangible/pharmaceutical/RangedStimPack.h"
 #include "server/zone/ZoneServer.h"
 #include "server/zone/managers/player/PlayerManager.h"
 #include "server/zone/objects/creature/events/InjuryTreatmentTask.h"
@@ -19,6 +19,7 @@
 class HealStateCommand : public QueueCommand {
 	float mindCost;
 	float range;
+	Vector<uint64> healableStates;
 public:
 
 	HealStateCommand(const String& name, ZoneProcessServer* server)
@@ -26,6 +27,10 @@ public:
 
 		mindCost = 20;
 		range = 6;
+		healableStates.add(CreatureState::STUNNED);
+		healableStates.add(CreatureState::DIZZY);
+		healableStates.add(CreatureState::BLINDED);
+		healableStates.add(CreatureState::INTIMIDATED);
 	}
 
 	void deactivateStateTreatment(CreatureObject* creature) const {
@@ -90,7 +95,7 @@ public:
 	}
 
 	void doAnimations(CreatureObject* creature, CreatureObject* creatureTarget) const {
-		creatureTarget->playEffect("clienteffect/healing_healdamage.cef", "");
+		creatureTarget->playEffect("clienteffect/healing_healstate.cef", "");
 
 		if (creature == creatureTarget)
 			creature->doAnimation("heal_self");
@@ -131,20 +136,16 @@ public:
 			for (int i = 0; i < inventory->getContainerObjectsSize(); i++) {
 				SceneObject* object = inventory->getContainerObject(i);
 
-				if (!object->isTangibleObject())
+				if (!object->isPharmaceuticalObject())
 					continue;
 
-				TangibleObject* item = cast<TangibleObject*>( object);
+				PharmaceuticalObject* pharma = cast<PharmaceuticalObject*>(object);
 
-				if (item->isPharmaceuticalObject()) {
-					PharmaceuticalObject* pharma = cast<PharmaceuticalObject*>( item);
+				if (pharma->isStatePack()) {
+					StatePack* statePack = cast<StatePack*>(pharma);
 
-					if (pharma->isStatePack()) {
-						StatePack* statePack = cast<StatePack*>( pharma);
-
-						if (statePack->getMedicineUseRequired() <= medicineUse && statePack->getState() == state)
-							return statePack;
-					}
+					if (statePack->getMedicineUseRequired() <= medicineUse && statePack->getState() == state)
+						return statePack;
 				}
 			}
 		}
@@ -191,8 +192,9 @@ public:
 					return GENERALERROR;
 				}
 			}
-		} else
+		} else {
 			object = creature;
+		}
 
 		CreatureObject* creatureTarget = cast<CreatureObject*>( object.get());
 
@@ -206,28 +208,51 @@ public:
 
 		parseModifier(arguments.toString(), state, objectId);
 
-		if (state == CreatureState::INVALID) {
-			creature->sendSystemMessage("@healing_response:healing_response_70"); //You must specify a valid state type.
-			return GENERALERROR;
-		}
-
 		SceneObject* inventory = creature->getSlottedObject("inventory");
 
 		ManagedReference<StatePack*> statePack = NULL;
 
-		if (inventory != NULL) {
-			statePack = inventory->getContainerObject(objectId).castTo<StatePack*>();
-		}
+		if(state != CreatureState::INVALID || objectId != 0) {
+			if (inventory != NULL) {
+				statePack = inventory->getContainerObject(objectId).castTo<StatePack*>();
+			}
 
-		if (statePack == NULL)
-			statePack = findStatePack(creature, state);
+			if (statePack == NULL)
+				statePack = findStatePack(creature, state);
+		}else {
+			uint64 targetStateBitmask = creatureTarget->getStateBitmask();
+			for(int i=0; i<healableStates.size(); i++) {
+
+				uint64 healableState = healableStates.get(i);
+
+				if(!(targetStateBitmask & healableState))
+					continue;
+
+
+				state = healableState;
+				statePack = findStatePack(creature, healableState);
+
+				if(statePack != NULL) {
+					break;
+				}
+			}
+
+			//if state is INVALID they had no healable states
+			//if it is valid but statePack is NULL they had no valid medicine for *any* state and will error in canPerformSkill
+			if(state == CreatureState::INVALID) {
+				StringIdChatParameter stringId("healing", "no_state_to_heal"); // %TT has no state that you can heal.
+				stringId.setTT(creatureTarget->getDisplayedName());
+				creature->sendSystemMessage(stringId);
+				return GENERALERROR;
+			}
+		}
 
 		int mindCostNew = creature->calculateCostAdjustment(CreatureAttribute::FOCUS, mindCost);
 
 		if (!canPerformSkill(creature, creatureTarget, statePack, mindCostNew))
 			return GENERALERROR;
 
-		if (!creatureTarget->isInRange(creature, range + creatureTarget->getTemplateRadius() + creature->getTemplateRadius()))
+		if(!checkDistance(creature, creatureTarget, range))
 			return TOOFAR;
 
 		PlayerManager* playerManager = server->getPlayerManager();

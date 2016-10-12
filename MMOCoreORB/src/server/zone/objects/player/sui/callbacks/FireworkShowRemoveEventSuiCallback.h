@@ -5,7 +5,6 @@
 #include "server/zone/objects/player/sui/SuiCallback.h"
 #include "server/zone/objects/tangible/firework/components/FireworkShowDataComponent.h"
 #include "server/zone/objects/player/sui/listbox/SuiListBox.h"
-#include "server/zone/managers/object/ObjectManager.h"
 
 class FireworkShowRemoveEventSuiCallback : public SuiCallback {
 public:
@@ -63,7 +62,7 @@ public:
 
 		if (fireworkShowObject != NULL) {
 			Locker locker(fireworkShowObject);
-			fireworkShowObject->setUseCount(fireworkShowObject->getUseCount() - 1, true);
+			fireworkShowObject->decreaseUseCount();
 		}
 
 		FireworkShowMenuComponent* showMenu = cast<FireworkShowMenuComponent*>(fireworkShow->getObjectMenuComponent());

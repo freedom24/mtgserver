@@ -14,13 +14,11 @@
 #include "server/zone/managers/gcw/GCWManager.h"
 
 class DonateDefenseSuiCallback : public SuiCallback {
-protected:
-	int turretSlot;
 
 public:
-	DonateDefenseSuiCallback(ZoneServer* server, int turretIndex)
+	DonateDefenseSuiCallback(ZoneServer* server)
 		: SuiCallback(server) {
-		turretSlot = turretIndex;
+
 	}
 
 	void run(CreatureObject* player, SuiBox* suiBox, uint32 eventIndex, Vector<UnicodeString>* args) {
@@ -31,7 +29,7 @@ public:
 
 		ManagedReference<SceneObject*> obj = suiBox->getUsingObject();
 
-		if(obj == NULL || !obj->isBuildingObject())
+		if (obj == NULL || !obj->isBuildingObject())
 			return;
 
 		SuiListBox* listBox = cast<SuiListBox*>(suiBox);
@@ -44,10 +42,10 @@ public:
 
 		GCWManager* gcwMan = player->getZone()->getGCWManager();
 
-		if(gcwMan==NULL)
+		if (gcwMan == NULL)
 			return;
 
-		gcwMan->performDefenseDonation(building, player,objectid, turretSlot);
+		gcwMan->performDefenseDonation(building, player, objectid);
 
 	}
 };

@@ -10,7 +10,7 @@
 
 #include "gtest/gtest.h"
 #include "server/zone/managers/director/DirectorManager.h"
-#include "server/conf/ConfigManager.h"
+#include "conf/ConfigManager.h"
 
 class BasicScreenPlayTest : public ::testing::Test {
 public:
@@ -35,6 +35,10 @@ public:
 
 TEST_F(BasicScreenPlayTest, ScreenPlayLuaInitialize) {
 	DirectorManager::DEBUG_MODE = 1;
+
+	lua_State* L = DirectorManager::instance()->getLuaInstance()->getLuaState();
+
+	ASSERT_EQ(*lua_version(L), 503) << "Wrong version of Lua Installed: " << *lua_version(L) << ". Required version: " << 503;
 	EXPECT_EQ(DirectorManager::instance()->runScreenPlays(), 0);
 }
 

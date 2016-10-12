@@ -5,7 +5,6 @@
 #include "server/zone/objects/scene/SceneObject.h"
 #include "server/zone/objects/player/PlayerObject.h"
 #include "server/zone/packets/object/ObjectMenuResponse.h"
-#include "server/zone/templates/tangible/EventPerkDeedTemplate.h"
 #include "server/zone/objects/tangible/tasks/RemoveEventPerkItemTask.h"
 #include "server/zone/objects/tangible/tasks/LotteryDroidPulseTask.h"
 #include "server/zone/objects/player/sui/listbox/SuiListBox.h"
@@ -33,8 +32,6 @@ void LotteryDroidImplementation::initializeTransientMembers() {
 	for (int i = 0; i <= 10; i++) {
 		payoutPercentChoices.add(100 - (i * 5));
 	}
-
-	activateRemoveEvent();
 }
 
 void LotteryDroidImplementation::fillObjectMenuResponse(ObjectMenuResponse* menuResponse, CreatureObject* player) {
@@ -256,7 +253,7 @@ void LotteryDroidImplementation::sendLotteryInfoSUI(CreatureObject* player) {
 
 	int payout = creditPool * payoutPercent;
 
-	uint64 timeLimit = gameDuration * 3600 * 1000;
+	uint64 timeLimit = ((uint64)gameDuration) * 3600 * 1000;
 	Time* startTime = getGameStartTime();
 
 	Time currentTime;
@@ -350,27 +347,6 @@ void LotteryDroidImplementation::endGame() {
 	gameStatus = GAMEENDED;
 }
 
-void LotteryDroidImplementation::activateRemoveEvent(bool immediate) {
-	if (removeEventPerkItemTask == NULL) {
-		removeEventPerkItemTask = new RemoveEventPerkItemTask(_this.getReferenceUnsafeStaticCast());
-
-		Time currentTime;
-		uint64 timeDelta = currentTime.getMiliTime() - purchaseTime.getMiliTime();
-
-		if (timeDelta >= TIMETOLIVE || immediate) {
-			removeEventPerkItemTask->execute();
-		} else {
-			removeEventPerkItemTask->schedule(TIMETOLIVE - timeDelta);
-		}
-	} else if (immediate) {
-		if (removeEventPerkItemTask->isScheduled()) {
-			removeEventPerkItemTask->reschedule(1);
-		} else {
-			removeEventPerkItemTask->execute();
-		}
-	}
-}
-
 CreatureObject* LotteryDroidImplementation::getDeedOwner() {
 	EventPerkDataComponent* gameData = cast<EventPerkDataComponent*>(getDataObjectComponent()->get());
 
@@ -389,9 +365,9 @@ CreatureObject* LotteryDroidImplementation::getDeedOwner() {
 	return owner;
 }
 
-String LotteryDroidImplementation::getTimeLeft(int timeLeft) {
+String LotteryDroidImplementation::getTimeLeft(uint64 timeLeft) {
 
-	float hours = timeLeft / (3600 * 1000);
+	float hours = (float)timeLeft / (3600.f * 1000.f);
 	int minHours = 0;
 
 	if (hours < 1)
@@ -414,6 +390,8 @@ String LotteryDroidImplementation::getTimeLeft(int timeLeft) {
 		minHours = 120;
 	else if (hours < 144)
 		minHours = 144;
+	else
+		minHours = 168;
 
 	StringIdManager* sMan = StringIdManager::instance();
 

@@ -7,15 +7,14 @@
 #include "MinefieldMenuComponent.h"
 #include "server/zone/packets/object/ObjectMenuResponse.h"
 #include "server/zone/Zone.h"
-#include "server/zone/managers/gcw/GCWManager.h"
 #include "server/zone/objects/scene/SceneObject.h"
 #include "server/zone/objects/tangible/TangibleObject.h"
 #include "server/zone/objects/installation/InstallationObject.h"
 #include "server/zone/objects/player/sui/listbox/SuiListBox.h"
-#include "server/zone/objects/creature/CreatureFlag.h"
+#include "templates/params/creature/CreatureFlag.h"
 
 
-void MinefieldMenuComponent::fillObjectMenuResponse(SceneObject* sceneObject, ObjectMenuResponse* menuResponse, CreatureObject* player) {
+void MinefieldMenuComponent::fillObjectMenuResponse(SceneObject* sceneObject, ObjectMenuResponse* menuResponse, CreatureObject* player) const {
 
 	if(!sceneObject->isMinefield() || sceneObject->getZoneServer() == NULL || sceneObject->getZone() == NULL)
 		return;
@@ -54,14 +53,10 @@ void MinefieldMenuComponent::fillObjectMenuResponse(SceneObject* sceneObject, Ob
 
 }
 
-int MinefieldMenuComponent::handleObjectMenuSelect(SceneObject* sceneObject, CreatureObject* player, byte selectedID) {
+int MinefieldMenuComponent::handleObjectMenuSelect(SceneObject* sceneObject, CreatureObject* player, byte selectedID) const {
 
 	Zone* zne = player->getZone();
 	if(zne == NULL)
-		return 1;
-
-	GCWManager* gcw = zne->getGCWManager();
-	if(gcw == NULL)
 		return 1;
 
 	ManagedReference<InstallationObject*> installation = cast<InstallationObject*>(sceneObject);
@@ -81,11 +76,3 @@ int MinefieldMenuComponent::handleObjectMenuSelect(SceneObject* sceneObject, Cre
 	return 0;
 
 }
-
-
-
-
-
-
-
-

@@ -10,15 +10,14 @@
 #include "server/zone/objects/player/PlayerObject.h"
 #include "server/zone/objects/scene/components/ObjectMenuComponent.h"
 #include "server/zone/packets/object/ObjectMenuResponse.h"
-#include "server/zone/managers/objectcontroller/ObjectController.h"
 #include "server/zone/ZoneServer.h"
 #include "server/zone/Zone.h"
-#include "server/zone/templates/customization/AssetCustomizationManagerTemplate.h"
+#include "templates/customization/AssetCustomizationManagerTemplate.h"
 #include "server/zone/objects/creature/ai/DroidObject.h"
 #include "server/zone/objects/player/sui/listbox/SuiListBox.h"
 #include "server/zone/objects/player/sui/callbacks/CustomDroidSuiCallback.h"
 
-void DroidCustomKitObjectMenuComponent::fillObjectMenuResponse(SceneObject* sceneObject, ObjectMenuResponse* menuResponse, CreatureObject* player) {
+void DroidCustomKitObjectMenuComponent::fillObjectMenuResponse(SceneObject* sceneObject, ObjectMenuResponse* menuResponse, CreatureObject* player) const {
 
 	if(!sceneObject->isTangibleObject())
 		return;
@@ -30,7 +29,7 @@ void DroidCustomKitObjectMenuComponent::fillObjectMenuResponse(SceneObject* scen
 	TangibleObjectMenuComponent::fillObjectMenuResponse(sceneObject, menuResponse, player);
 }
 
-int DroidCustomKitObjectMenuComponent::handleObjectMenuSelect(SceneObject* sceneObject, CreatureObject* player, byte selectedID) {
+int DroidCustomKitObjectMenuComponent::handleObjectMenuSelect(SceneObject* sceneObject, CreatureObject* player, byte selectedID) const {
 
 	if (player == NULL)
 		return 0;

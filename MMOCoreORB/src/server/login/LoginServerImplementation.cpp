@@ -9,7 +9,7 @@
 
 #include "LoginMessageProcessorTask.h"
 
-#include "server/conf/ConfigManager.h"
+#include "conf/ConfigManager.h"
 #include "server/login/account/AccountManager.h"
 #include "server/login/account/Account.h"
 
@@ -83,11 +83,19 @@ void LoginServerImplementation::start(int p, int mconn) {
 }
 
 void LoginServerImplementation::stop() {
+	shutdown();
+
 	datagramService->stop();
+	datagramService = NULL;
 }
 
 void LoginServerImplementation::shutdown() {
 	stopManagers();
+	loginHandler = NULL;
+	phandler = NULL;
+	processor = NULL;
+	enumClusterMessage = NULL;
+	clusterStatusMessage = NULL;
 
 	printInfo();
 
@@ -96,6 +104,7 @@ void LoginServerImplementation::shutdown() {
 
 void LoginServerImplementation::stopManagers() {
 	accountManager = NULL;
+	configManager = NULL;
 
 	info("managers stopped", true);
 }
@@ -148,9 +157,12 @@ LoginClient* LoginServerImplementation::getLoginClient(ServiceClient* session) {
 
 bool LoginServerImplementation::handleError(ServiceClient* client, Exception& e) {
 	BaseClientProxy* bclient = cast<BaseClientProxy*>(client);
-	bclient->setError();
 
-	bclient->disconnect();
+	if (bclient != NULL) {
+		bclient->setError();
+
+		bclient->disconnect();
+	}
 
 	return true;
 }
@@ -201,6 +213,3 @@ void LoginServerImplementation::populateGalaxyList() {
     enumClusterMessage->finish();
 }
 
-Account* LoginServerImplementation::getAccount(unsigned int accountID) {
-	return accountManager->getAccount(accountID);
-}

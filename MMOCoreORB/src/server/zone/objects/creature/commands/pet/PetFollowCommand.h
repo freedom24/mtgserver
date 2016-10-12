@@ -6,7 +6,7 @@
 #include "server/zone/objects/creature/ai/AiAgent.h"
 #include "server/zone/objects/creature/ai/DroidObject.h"
 #include "server/zone/managers/combat/CombatManager.h"
-#include "server/zone/objects/scene/ObserverEventType.h"
+#include "templates/params/ObserverEventType.h"
 #include "server/zone/managers/creature/PetManager.h"
 
 class PetFollowCommand : public QueueCommand {
@@ -29,6 +29,9 @@ public:
 
 		if (pet->hasRidingCreature())
 			return GENERALERROR;
+
+		if (pet->getPosture() != CreaturePosture::UPRIGHT && pet->getPosture() != CreaturePosture::KNOCKEDDOWN)
+			pet->setPosture(CreaturePosture::UPRIGHT);
 
 		ManagedReference<SceneObject*> targetObject = server->getZoneServer()->getObject(target, true);
 		if (targetObject == NULL || !targetObject->isCreatureObject() ) { // pets should be able to follow other mobiles as a command. i found multiple references to this. -- washu

@@ -1,5 +1,5 @@
 pirate_privateer = Creature:new {
-	objectName = "",
+	objectName = "@mob/creature_names:pirate",
 	randomNameType = NAME_GENERIC,
 	randomNameTag = true,
 	customName = "a Privateer Pirate",
@@ -25,7 +25,7 @@ pirate_privateer = Creature:new {
 	ferocity = 0,
 	pvpBitmask = ATTACKABLE,
 	creatureBitmask = PACK + KILLER,
-	optionsBitmask = 128,
+	optionsBitmask = AIENABLED,
 	diet = HERBIVORE,
 
 	templates = {

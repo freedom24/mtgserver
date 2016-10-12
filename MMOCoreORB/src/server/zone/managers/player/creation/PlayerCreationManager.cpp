@@ -12,26 +12,28 @@
 #include "server/zone/managers/player/PlayerManager.h"
 #include "server/login/packets/ErrorMessage.h"
 #include "server/chat/ChatManager.h"
+#include "server/chat/room/ChatRoom.h"
 #include "server/login/account/Account.h"
 #include "server/zone/objects/player/sui/messagebox/SuiMessageBox.h"
 #include "server/zone/objects/player/PlayerObject.h"
 #include "server/zone/packets/MessageCallback.h"
 #include "server/zone/packets/charcreation/ClientCreateCharacterCallback.h"
 #include "server/zone/packets/charcreation/ClientCreateCharacterSuccess.h"
-#include "server/zone/managers/templates/TemplateManager.h"
-#include "server/zone/templates/datatables/DataTableIff.h"
-#include "server/zone/templates/datatables/DataTableRow.h"
-#include "server/zone/templates/creation/SkillDataForm.h"
-#include "server/zone/templates/tangible/PlayerCreatureTemplate.h"
+#include "templates/manager/TemplateManager.h"
+#include "templates/datatables/DataTableIff.h"
+#include "templates/datatables/DataTableRow.h"
+#include "templates/creation/SkillDataForm.h"
+#include "templates/creature/PlayerCreatureTemplate.h"
 #include "server/ServerCore.h"
 #include "server/zone/objects/intangible/ShipControlDevice.h"
 #include "server/zone/objects/ship/ShipObject.h"
-#include "server/zone/managers/customization/CustomizationIdManager.h"
+#include "templates/customization/CustomizationIdManager.h"
 #include "server/zone/managers/skill/imagedesign/ImageDesignManager.h"
-#include "server/zone/templates/customization/AssetCustomizationManagerTemplate.h"
-#include "server/zone/templates/params/PaletteColorCustomizationVariable.h"
-#include "server/zone/templates/customization/BasicRangedIntCustomizationVariable.h"
+#include "templates/customization/AssetCustomizationManagerTemplate.h"
+#include "templates/params/PaletteColorCustomizationVariable.h"
+#include "templates/customization/BasicRangedIntCustomizationVariable.h"
 #include "server/zone/managers/jedi/JediManager.h"
+#include "server/login/account/AccountManager.h"
 
 PlayerCreationManager::PlayerCreationManager() :
 		Logger("PlayerCreationManager") {
@@ -58,6 +60,7 @@ PlayerCreationManager::PlayerCreationManager() :
 }
 
 PlayerCreationManager::~PlayerCreationManager() {
+
 }
 
 void PlayerCreationManager::loadRacialCreationData() {
@@ -334,12 +337,10 @@ void PlayerCreationManager::loadLuaStartingItems(Lua* lua) {
 	}
 }
 
-bool PlayerCreationManager::createCharacter(MessageCallback* data) {
+bool PlayerCreationManager::createCharacter(ClientCreateCharacterCallback* callback) {
 	TemplateManager* templateManager = TemplateManager::instance();
 
-	ClientCreateCharacterCallback* callback = cast<
-			ClientCreateCharacterCallback*>(data);
-	ZoneClientSession* client = data->getClient();
+	ZoneClientSession* client = callback->getClient();
 
 	if (client->getCharacterCount(zoneServer.get()->getGalaxyID()) >= 10) {
 		ErrorMessage* errMsg = new ErrorMessage("Create Error", "You are limited to 10 characters per galaxy.", 0x0);
@@ -458,14 +459,13 @@ bool PlayerCreationManager::createCharacter(MessageCallback* data) {
 	playerCreature->setBankCredits(startingBank, false);
 
 	if (ghost != NULL) {
-
-		ghost->setAccountID(client->getAccountID());
+		int accID = client->getAccountID();
+		ghost->setAccountID(accID);
+		ghost->initializeAccount();
 
 		if (!freeGodMode) {
 			try {
-				uint32 accID = client->getAccountID();
-
-				ManagedReference<Account*> playerAccount = playerManager->getAccount(accID);
+				ManagedReference<Account*> playerAccount = ghost->getAccount();
 
 				if (playerAccount == NULL) {
 					playerCreature->destroyPlayerCreatureFromDatabase(true);
@@ -516,8 +516,8 @@ bool PlayerCreationManager::createCharacter(MessageCallback* data) {
 
 							Time timeVal(sec);
 
-							if (timeVal.miliDifference() < 86400000) {
-								ErrorMessage* errMsg = new ErrorMessage("Create Error", "You are only permitted to create one character every 24 hours. Repeat attempts prior to 24 hours elapsing will reset the timer.", 0x0);
+							if (timeVal.miliDifference() < 3600000) {
+								ErrorMessage* errMsg = new ErrorMessage("Create Error", "You are only permitted to create one character per hour. Repeat attempts prior to 1 hour elapsing will reset the timer.", 0x0);
 								client->sendMessage(errMsg);
 
 								playerCreature->destroyPlayerCreatureFromDatabase(true);
@@ -534,8 +534,8 @@ bool PlayerCreationManager::createCharacter(MessageCallback* data) {
 					if (lastCreatedCharacter.containsKey(accID)) {
 						Time lastCreatedTime = lastCreatedCharacter.get(accID);
 
-						if (lastCreatedTime.miliDifference() < 86400000) {
-							ErrorMessage* errMsg = new ErrorMessage("Create Error", "You are only permitted to create one character every 24 hours. Repeat attempts prior to 24 hours elapsing will reset the timer.", 0x0);
+						if (lastCreatedTime.miliDifference() < 3600000) {
+							ErrorMessage* errMsg = new ErrorMessage("Create Error", "You are only permitted to create one character per hour. Repeat attempts prior to 1 hour elapsing will reset the timer.", 0x0);
 							client->sendMessage(errMsg);
 
 							playerCreature->destroyPlayerCreatureFromDatabase(true);
@@ -599,49 +599,18 @@ bool PlayerCreationManager::createCharacter(MessageCallback* data) {
 
 	playerManager->addPlayer(playerCreature);
 
-	// Copy claimed veteran rewards from player's alt character
-	uint32 accID = client->getAccountID();
-	ManagedReference<Account*> playerAccount = playerManager->getAccount(accID);
-	if (playerAccount != NULL && ghost != NULL) {
-
-		// Find the first alt character
-		ManagedReference<CreatureObject*> altPlayer = NULL;
-		CharacterList* characters = playerAccount->getCharacterList();
-		for(int i = 0; i < characters->size(); ++i) {
-			CharacterListEntry* entry = &characters->get(i);
-			if(entry->getGalaxyID() == zoneServer.get()->getGalaxyID() &&
-		       entry->getFirstName() != playerCreature->getFirstName() ) {
-
-				altPlayer = playerManager->getPlayer(entry->getFirstName());
-				if( altPlayer != NULL ){
-					break;
-				}
-			}
-		}
-
-		// Record the rewards if alt player was found
-		if( altPlayer != NULL && altPlayer->getPlayerObject() != NULL){
-
-			Locker alocker( altPlayer );
-			for( int i = 0; i < playerManager->getNumVeteranRewardMilestones(); i++ ){
-				int milestone = playerManager->getVeteranRewardMilestone(i);
-				String claimedReward = altPlayer->getPlayerObject()->getChosenVeteranReward(milestone);
-				if( !claimedReward.isEmpty() ){
-					ghost->addChosenVeteranReward(milestone,claimedReward);
-				}
-			}
-		}
-	}
-
 	client->addCharacter(playerCreature->getObjectID(), zoneServer.get()->getGalaxyID());
 
 	JediManager::instance()->onPlayerCreated(playerCreature);
 
 	chatManager->sendMail("system", "@newbie_tutorial/newbie_mail:welcome_subject", "@newbie_tutorial/newbie_mail:welcome_body", playerCreature->getFirstName());
 
+	//Join auction chat room
+	ghost->addChatRoom(chatManager->getAuctionRoom()->getRoomID());
+
 	ManagedReference<SuiMessageBox*> box = new SuiMessageBox(playerCreature, SuiWindowType::NONE);
 	box->setPromptTitle("PLEASE NOTE");
-	box->setPromptText("You are limited to creating one character every 24 hours. Attempting to create another character or deleting your character before the 24 hour timer expires will reset the timer.");
+	box->setPromptText("You are limited to creating one character per hour. Attempting to create another character or deleting your character before the 1 hour timer expires will reset the timer.");
 
 	ghost->addSuiBox(box);
 	playerCreature->sendMessage(box->generateMessage());

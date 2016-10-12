@@ -14,10 +14,9 @@
 #include "server/zone/objects/region/Region.h"
 #include "server/zone/Zone.h"
 #include "server/zone/ZoneServer.h"
-#include "server/zone/managers/object/ObjectManager.h"
 #include "server/zone/managers/creature/CreatureManager.h"
 #include "server/zone/managers/mission/MissionManager.h"
-#include "server/zone/managers/terrain/TerrainManager.h"
+#include "terrain/manager/TerrainManager.h"
 #include "server/zone/managers/planet/PlanetManager.h"
 #include "server/zone/packets/object/NpcConversationMessage.h"
 #include "server/zone/packets/object/StartNpcConversation.h"
@@ -91,10 +90,10 @@ bool DeliverMissionObjectiveImplementation::activateWithResult() {
 	//Select spawn type.
 	int spawnType = NpcSpawnPoint::NEUTRALSPAWN;
 	switch (mission->getFaction()) {
-	case FactionManager::FACTIONIMPERIAL:
+	case Factions::FACTIONIMPERIAL:
 		spawnType = NpcSpawnPoint::IMPERIALSPAWN;
 		break;
-	case FactionManager::FACTIONREBEL:
+	case Factions::FACTIONREBEL:
 		spawnType = NpcSpawnPoint::REBELSPAWN;
 		break;
 	default:

@@ -104,6 +104,8 @@
 #include "server/zone/objects/tangible/firework/components/FireworkShowMenuComponent.h"
 #include "server/zone/objects/tangible/firework/components/FireworkShowDataComponent.h"
 #include "server/zone/objects/structure/components/StructureZoneComponent.h"
+#include "server/zone/objects/structure/components/GarageZoneComponent.h"
+#include "server/zone/objects/structure/components/GarageDataComponent.h"
 #include "server/zone/objects/creature/components/TrainerMenuComponent.h"
 #include "server/zone/objects/creature/components/SarlaccMenuComponent.h"
 #include "server/zone/objects/creature/components/PetMenuComponent.h"
@@ -113,6 +115,7 @@
 #include "server/zone/objects/tangible/components/ArmorObjectMenuComponent.h"
 #include "server/zone/objects/tangible/components/PlaceableLootContainerComponent.h"
 #include "server/zone/objects/tangible/components/ScavengerChestContainerComponent.h"
+#include "server/zone/objects/tangible/components/ScavengerDroidContainerComponent.h"
 #include "server/zone/objects/tangible/tool/recycle/RecycleToolContainerComponent.h"
 #include "server/zone/objects/structure/components/DecorationDataComponent.h"
 #include "server/zone/objects/tangible/components/CityDecorationMenuComponent.h"
@@ -159,9 +162,9 @@ ComponentManager::ComponentManager() {
 	components.put("StructureZoneComponent", new StructureZoneComponent());
 	components.put("ShuttleZoneComponent", new ShuttleZoneComponent());
 	components.put("ShuttleInstallationZoneComponent", new ShuttleInstallationZoneComponent());
+	components.put("GarageZoneComponent", new GarageZoneComponent());
+	dataObjectFactory.registerObject<GarageDataComponent>("GarageDataComponent");
 
-	components.put("BuildingDataComponent", new BuildingDataComponent() );
-	components.put("DestructibleBuildingDataComponent", new DestructibleBuildingDataComponent());
 	dataObjectFactory.registerObject<BuildingDataComponent>("BuildingDataComponent");
 	dataObjectFactory.registerObject<DestructibleBuildingDataComponent>("DestructibleBuildingDataComponent");
 
@@ -254,7 +257,6 @@ ComponentManager::ComponentManager() {
 
 	dataObjectFactory.registerObject<TurretDataComponent>("TurretDataComponent");
 	dataObjectFactory.registerObject<MinefieldDataComponent>("MinefieldDataComponent");
-
 	dataObjectFactory.registerObject<DetectorDataComponent>("DetectorDataComponent");
 
 	components.put("CreatureHabitatMenuComponent", new CreatureHabitatMenuComponent());
@@ -300,8 +302,8 @@ ComponentManager::ComponentManager() {
 	components.put("PlaceableLootContainerComponent", new PlaceableLootContainerComponent());
 
 	components.put("ScavengerChestContainerComponent", new ScavengerChestContainerComponent());
+	components.put("ScavengerDroidContainerComponent", new ScavengerDroidContainerComponent());
 
-	components.put("DecorationDataComponent", new DecorationDataComponent() );
 	dataObjectFactory.registerObject<DecorationDataComponent>("DecorationDataComponent");
 
 	components.put("DungeonTicketObjectAttributeListComponent", new DungeonTicketObjectAttributeListComponent());
@@ -311,17 +313,14 @@ ComponentManager::ComponentManager() {
 	components.put("FactionRecruiterContainerComponent", new FactionRecruiterContainerComponent());
 	components.put("CoaMessageFragmentMenuComponent", new CoaMessageFragmentMenuComponent());
 	components.put("CoaMessageMenuComponent", new CoaMessageMenuComponent());
-	components.put("CoaMessageDataComponent", new CoaMessageDataComponent() );
 	dataObjectFactory.registerObject<CoaMessageDataComponent>("CoaMessageDataComponent");
 	components.put("CoaEncodedDiskMenuComponent", new CoaEncodedDiskMenuComponent());
 
 	components.put("EventPerkMenuComponent", new EventPerkMenuComponent() );
-	components.put("EventPerkDataComponent", new EventPerkDataComponent() );
 	components.put("EventPerkAttributeListComponent", new EventPerkAttributeListComponent() );
 	dataObjectFactory.registerObject<EventPerkDataComponent>("EventPerkDataComponent");
 
 	components.put("FlagGameMenuComponent", new FlagGameMenuComponent() );
-	components.put("FlagGameDataComponent", new FlagGameDataComponent() );
 	dataObjectFactory.registerObject<FlagGameDataComponent>("FlagGameDataComponent");
 	// Droid components
 	dataObjectFactory.registerObject<DroidMaintenanceModuleDataComponent>("DroidMaintenanceModuleDataComponent");

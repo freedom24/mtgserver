@@ -6,8 +6,6 @@
 #define QUICKHEALCOMMAND_H_
 
 #include "server/zone/objects/scene/SceneObject.h"
-#include "server/zone/objects/tangible/pharmaceutical/StimPack.h"
-#include "server/zone/objects/tangible/pharmaceutical/RangedStimPack.h"
 #include "server/zone/ZoneServer.h"
 #include "server/zone/managers/player/PlayerManager.h"
 #include "server/zone/objects/creature/events/InjuryTreatmentTask.h"
@@ -114,7 +112,7 @@ public:
 
 		Locker clocker(creatureTarget, creature);
 
-		if (!creature->isInRange(creatureTarget, range + creatureTarget->getTemplateRadius() + creature->getTemplateRadius()))
+		if(!checkDistance(creature, creatureTarget, range))
 			return TOOFAR;
 
 		if ((creatureTarget->isAiAgent() && !creatureTarget->isPet()) || creatureTarget->isDroidObject() || creatureTarget->isDead() || creatureTarget->isRidingMount() || creatureTarget->isAttackableBy(creature))

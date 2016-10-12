@@ -9,11 +9,11 @@
 
 #include "server/zone/objects/player/Races.h"
 #include "server/zone/objects/creature/CreatureObject.h"
-#include "server/zone/objects/terrain/Terrain.h"
+#include "terrain/Terrain.h"
 
 #include "server/zone/Zone.h"
 
-#include "server/zone/managers/templates/TemplateManager.h"
+#include "templates/manager/TemplateManager.h"
 
 class CmdStartScene : public BaseMessage {
 public:

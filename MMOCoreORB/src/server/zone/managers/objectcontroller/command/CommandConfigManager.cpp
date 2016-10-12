@@ -31,12 +31,11 @@
 #include "server/zone/objects/creature/commands/pet/PetClearPatrolPointsCommand.h"
 #include "server/zone/objects/creature/commands/pet/PetGetPatrolPointCommand.h"
 
-#include "server/zone/objects/creature/CreatureState.h"
-#include "server/zone/objects/creature/CreaturePosture.h"
-#include "server/zone/objects/creature/CreatureLocomotion.h"
-#include "server/zone/templates/datatables/DataTableIff.h"
-#include "server/zone/templates/datatables/DataTableRow.h"
-
+#include "templates/params/creature/CreatureState.h"
+#include "templates/params/creature/CreaturePosture.h"
+#include "templates/params/creature/CreatureLocomotion.h"
+#include "templates/datatables/DataTableIff.h"
+#include "templates/datatables/DataTableRow.h"
 #include "server/zone/ZoneProcessServer.h"
 #include "CommandList.h"
 
@@ -59,10 +58,6 @@ CommandConfigManager::CommandConfigManager(ZoneProcessServer* serv) {
 
 CommandConfigManager::~CommandConfigManager() {
 	server = NULL;
-
-	if (slashCommands != NULL)
-		delete slashCommands;
-
 	slashCommands = NULL;
 
 	ERROR_CODE = 0;
@@ -314,7 +309,6 @@ void CommandConfigManager::registerSpecialCommands(CommandList* sCommands) {
 	createCommand(String("mildDisease").toLowerCase())->setCommandGroup(0xe1c9a54a);
 	createCommand(String("strongDisease").toLowerCase())->setCommandGroup(0xe1c9a54a);
 	createCommand(String("turretFire").toLowerCase())->setCommandGroup(0xe1c9a54a);
-	createCommand(String("turretFireManual").toLowerCase())->setCommandGroup(0xe1c9a54a);
 	createCommand(String("minefieldAttack").toLowerCase())->setCommandGroup(0xe1c9a54a);
 	createCommand(String("creatureRangedAttack").toLowerCase())->setCommandGroup(0xe1c9a54a);
 	createCommand(String("defaultDroidAttack").toLowerCase())->setCommandGroup(0xe1c9a54a);
@@ -367,6 +361,7 @@ void CommandConfigManager::registerGlobals() {
 	setGlobalLong("TUMBLING_STATE", CreatureState::TUMBLING);
 	setGlobalLong("RALLIED_STATE", CreatureState::RALLIED);
 	setGlobalLong("STUNNED_STATE", CreatureState::STUNNED);
+	setGlobalLong("FEIGNDEATH_STATE", CreatureState::FEIGNDEATH);
 	setGlobalLong("BLINDED_STATE", CreatureState::BLINDED);
 	setGlobalLong("DIZZY_STATE", CreatureState::DIZZY);
 	setGlobalLong("INTIMIDATED_STATE", CreatureState::INTIMIDATED);
@@ -427,26 +422,26 @@ void CommandConfigManager::registerGlobals() {
 	setGlobalInt("ATTACK_POOL", CreatureAttribute::UNKNOWN);
 
 	// weapons
-	setGlobalInt("ANYWEAPON", CombatManager::ANYWEAPON);
-	setGlobalInt("THROWNWEAPON", CombatManager::THROWNWEAPON);
-	setGlobalInt("HEAVYWEAPON", CombatManager::HEAVYWEAPON);
-	setGlobalInt("MINEWEAPON", CombatManager::MINEWEAPON);
-	setGlobalInt("SPECIALHEAVYWEAPON", CombatManager::SPECIALHEAVYWEAPON);
-	setGlobalInt("UNARMEDWEAPON", CombatManager::UNARMEDWEAPON);
-	setGlobalInt("ONEHANDMELEEWEAPON", CombatManager::ONEHANDMELEEWEAPON);
-	setGlobalInt("TWOHANDMELEEWEAPON", CombatManager::TWOHANDMELEEWEAPON);
-	setGlobalInt("POLEARMWEAPON", CombatManager::POLEARMWEAPON);
-	setGlobalInt("PISTOLWEAPON", CombatManager::PISTOLWEAPON);
-	setGlobalInt("CARBINEWEAPON", CombatManager::CARBINEWEAPON);
-	setGlobalInt("RIFLEWEAPON", CombatManager::RIFLEWEAPON);
-	setGlobalInt("GRENADEWEAPON", CombatManager::GRENADEWEAPON);
-	setGlobalInt("LIGHTNINGRIFLEWEAPON", CombatManager::LIGHTNINGRIFLEWEAPON);
-	setGlobalInt("ONEHANDJEDIWEAPON", CombatManager::ONEHANDJEDIWEAPON);
-	setGlobalInt("TWOHANDJEDIWEAPON", CombatManager::TWOHANDJEDIWEAPON);
-	setGlobalInt("POLEARMJEDIWEAPON", CombatManager::POLEARMJEDIWEAPON);
-	setGlobalInt("MELEEWEAPON", CombatManager::MELEEWEAPON);
-	setGlobalInt("RANGEDWEAPON", CombatManager::RANGEDWEAPON);
-	setGlobalInt("JEDIWEAPON", CombatManager::JEDIWEAPON);
+	setGlobalInt("ANYWEAPON", SharedWeaponObjectTemplate::ANYWEAPON);
+	setGlobalInt("THROWNWEAPON", SharedWeaponObjectTemplate::THROWNWEAPON);
+	setGlobalInt("HEAVYWEAPON", SharedWeaponObjectTemplate::HEAVYWEAPON);
+	setGlobalInt("MINEWEAPON", SharedWeaponObjectTemplate::MINEWEAPON);
+	setGlobalInt("SPECIALHEAVYWEAPON", SharedWeaponObjectTemplate::SPECIALHEAVYWEAPON);
+	setGlobalInt("UNARMEDWEAPON", SharedWeaponObjectTemplate::UNARMEDWEAPON);
+	setGlobalInt("ONEHANDMELEEWEAPON", SharedWeaponObjectTemplate::ONEHANDMELEEWEAPON);
+	setGlobalInt("TWOHANDMELEEWEAPON", SharedWeaponObjectTemplate::TWOHANDMELEEWEAPON);
+	setGlobalInt("POLEARMWEAPON", SharedWeaponObjectTemplate::POLEARMWEAPON);
+	setGlobalInt("PISTOLWEAPON", SharedWeaponObjectTemplate::PISTOLWEAPON);
+	setGlobalInt("CARBINEWEAPON", SharedWeaponObjectTemplate::CARBINEWEAPON);
+	setGlobalInt("RIFLEWEAPON", SharedWeaponObjectTemplate::RIFLEWEAPON);
+	setGlobalInt("GRENADEWEAPON", SharedWeaponObjectTemplate::GRENADEWEAPON);
+	setGlobalInt("LIGHTNINGRIFLEWEAPON", SharedWeaponObjectTemplate::LIGHTNINGRIFLEWEAPON);
+	setGlobalInt("ONEHANDJEDIWEAPON", SharedWeaponObjectTemplate::ONEHANDJEDIWEAPON);
+	setGlobalInt("TWOHANDJEDIWEAPON", SharedWeaponObjectTemplate::TWOHANDJEDIWEAPON);
+	setGlobalInt("POLEARMJEDIWEAPON", SharedWeaponObjectTemplate::POLEARMJEDIWEAPON);
+	setGlobalInt("MELEEWEAPON", SharedWeaponObjectTemplate::MELEEWEAPON);
+	setGlobalInt("RANGEDWEAPON", SharedWeaponObjectTemplate::RANGEDWEAPON);
+	setGlobalInt("JEDIWEAPON", SharedWeaponObjectTemplate::JEDIWEAPON);
 
 	// effects
 	setGlobalInt("INVALID_EFFECT", CommandEffect::INVALID);
@@ -476,20 +471,16 @@ void CommandConfigManager::registerGlobals() {
 	setGlobalInt("WEAPONTRAIL", CombatManager::WEAPONTRAIL);
 	setGlobalInt("DEFAULTTRAIL", CombatManager::DEFAULTTRAIL);
 
-	// attack types
-	setGlobalInt("WEAPONATTACK", CombatManager::WEAPONATTACK);
-	setGlobalInt("FORCEATTACK", CombatManager::FORCEATTACK);
-
 	// damage types
-	setGlobalInt("KINETIC_DAMAGE", WeaponObject::KINETIC);
-	setGlobalInt("ENERGY_DAMAGE", WeaponObject::ENERGY);
-	setGlobalInt("BLAST_DAMAGE", WeaponObject::BLAST);
-	setGlobalInt("STUN_DAMAGE", WeaponObject::STUN);
-	setGlobalInt("LIGHTSABER_DAMAGE", WeaponObject::LIGHTSABER);
-	setGlobalInt("HEAT_DAMAGE", WeaponObject::HEAT);
-	setGlobalInt("COLD_DAMAGE", WeaponObject::COLD);
-	setGlobalInt("ACID_DAMAGE", WeaponObject::ACID);
-	setGlobalInt("ELECTRICITY_DAMAGE", WeaponObject::ELECTRICITY);
+	setGlobalInt("KINETIC_DAMAGE", SharedWeaponObjectTemplate::KINETIC);
+	setGlobalInt("ENERGY_DAMAGE", SharedWeaponObjectTemplate::ENERGY);
+	setGlobalInt("BLAST_DAMAGE", SharedWeaponObjectTemplate::BLAST);
+	setGlobalInt("STUN_DAMAGE", SharedWeaponObjectTemplate::STUN);
+	setGlobalInt("LIGHTSABER_DAMAGE", SharedWeaponObjectTemplate::LIGHTSABER);
+	setGlobalInt("HEAT_DAMAGE", SharedWeaponObjectTemplate::HEAT);
+	setGlobalInt("COLD_DAMAGE", SharedWeaponObjectTemplate::COLD);
+	setGlobalInt("ACID_DAMAGE", SharedWeaponObjectTemplate::ACID);
+	setGlobalInt("ELECTRICITY_DAMAGE", SharedWeaponObjectTemplate::ELECTRICITY);
     
 	// JediQueueCommand buff types
 	setGlobalInt("BASE_BUFF", JediQueueCommand::BASE_BUFF);
@@ -498,6 +489,11 @@ void CommandConfigManager::registerGlobals() {
 	// force heal targets
 	setGlobalInt("FORCE_HEAL_TARGET_SELF", ForceHealQueueCommand::TARGET_SELF);
 	setGlobalInt("FORCE_HEAL_TARGET_OTHER", ForceHealQueueCommand::TARGET_OTHER);
+
+	//animation generation types
+	setGlobalInt("GENERATE_NONE", CombatQueueCommand::GENERATE_NONE);
+	setGlobalInt("GENERATE_RANGED", CombatQueueCommand::GENERATE_RANGED);
+	setGlobalInt("GENERATE_INTENSITY", CombatQueueCommand::GENERATE_INTENSITY);
 }
 
 int CommandConfigManager::runSlashCommandsFile(lua_State* L) {
@@ -568,9 +564,10 @@ void CommandConfigManager::parseVariableData(String varName, LuaObject &command,
 
 	} else if (slashCommand->isCombatCommand()) { // define combat variables (for combat commands)
 		CombatQueueCommand* combatCommand = cast<CombatQueueCommand*>(slashCommand);
-		if (varName == "attackType")
-			combatCommand->setAttackType(Lua::getIntParameter(L));
-		else if (varName == "damageMultiplier")
+		if (varName == "forceAttack") {
+			combatCommand->setForceAttack((bool)lua_toboolean(L, -1));
+			command.pop();
+		} else if (varName == "damageMultiplier")
 			combatCommand->setDamageMultiplier(Lua::getFloatParameter(L));
 		else if (varName == "accuracyBonus")
 			combatCommand->setAccuracyBonus(Lua::getIntParameter(L));
@@ -609,6 +606,9 @@ void CommandConfigManager::parseVariableData(String varName, LuaObject &command,
 		else if (varName == "areaAction") {
 			combatCommand->setAreaAction((bool)lua_toboolean(L, -1));
 			command.pop();
+		} else if (varName == "splashDamage") {
+			combatCommand->setSplashDamage((bool)lua_toboolean(L, -1));
+			command.pop();
 		} else if (varName == "coneAction") {
 			combatCommand->setConeAction((bool)lua_toboolean(L, -1));
 			command.pop();
@@ -618,8 +618,10 @@ void CommandConfigManager::parseVariableData(String varName, LuaObject &command,
 			combatCommand->setAreaRange(Lua::getIntParameter(L));
 		else if (varName == "combatSpam")
 			combatCommand->setCombatSpam(Lua::getStringParameter(L));
-		else if (varName == "animationCRC")
-			combatCommand->setAnimationCRC(Lua::getUnsignedIntParameter(L));
+		else if (varName == "animation")
+			combatCommand->setAnimationString(Lua::getStringParameter(L));
+		else if (varName == "animType")
+			combatCommand->setAnimType(Lua::getUnsignedIntParameter(L));
 		else if (varName == "effectString")
 			combatCommand->setEffectString(Lua::getStringParameter(L));
 		else if (varName == "trails")
@@ -670,7 +672,7 @@ void CommandConfigManager::parseVariableData(String varName, LuaObject &command,
 		else if (varName == "duration")
 			jediCommand->setDuration(Lua::getIntParameter(L));
 		else if (varName == "animationCRC")
-			jediCommand->setAnimationCRC(Lua::getUnsignedIntParameter(L));
+			jediCommand->setAnimationCRC(Lua::getIntParameter(L));
 		else if (varName == "clientEffect")
 			jediCommand->setClientEffect(Lua::getStringParameter(L));
 		else if (varName == "speedMod")
@@ -1491,7 +1493,6 @@ void CommandConfigManager::registerCommands() {
 	commandFactory.registerCommand<TumbleToProneCommand>(String("tumbleToProne").toLowerCase());
 	commandFactory.registerCommand<TumbleToStandingCommand>(String("tumbleToStanding").toLowerCase());
 	commandFactory.registerCommand<TurretFireCommand>(String("turretFire").toLowerCase());
-	commandFactory.registerCommand<TurretFireManualCommand>(String("turretFireManual").toLowerCase());
 	commandFactory.registerCommand<UnarmedBlind1Command>(String("unarmedBlind1").toLowerCase());
 	commandFactory.registerCommand<UnarmedBodyHit1Command>(String("unarmedBodyHit1").toLowerCase());
 	commandFactory.registerCommand<UnarmedCombo1Command>(String("unarmedCombo1").toLowerCase());

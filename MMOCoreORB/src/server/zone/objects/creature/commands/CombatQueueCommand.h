@@ -12,18 +12,16 @@
 #include "server/zone/Zone.h"
 #include "server/zone/objects/scene/SceneObject.h"
 #include "server/zone/managers/combat/CombatManager.h"
-#include "server/zone/managers/player/PlayerManager.h"
 #include "server/zone/objects/player/PlayerObject.h"
 #include "server/zone/managers/combat/CreatureAttackData.h"
 #include "server/zone/managers/collision/CollisionManager.h"
-#include "server/zone/objects/creature/CreatureAttribute.h"
-#include "server/zone/objects/creature/CreatureState.h"
+#include "templates/params/creature/CreatureAttribute.h"
+#include "templates/params/creature/CreatureState.h"
 #include "server/zone/objects/creature/commands/effect/StateEffect.h"
 #include "server/zone/objects/creature/commands/effect/DotEffect.h"
 #include "server/zone/objects/creature/commands/effect/CommandEffect.h"
 #include "server/zone/packets/object/CombatSpam.h"
 #include "QueueCommand.h"
-#include "server/zone/managers/collision/PathFinderManager.h"
 
 class CombatQueueCommand : public QueueCommand {
 protected:
@@ -48,6 +46,7 @@ protected:
 
 	String accuracySkillMod;
 
+	bool splashDamage;
 	bool areaAction;
 	bool coneAction;
 	int coneAngle;
@@ -55,18 +54,24 @@ protected:
 
 	String combatSpam;
 	String stateSpam;
-	uint32 animationCRC;
+	String animation;
 	String effectString;
 
 	VectorMap<uint8, StateEffect> stateEffects;
 	Vector<DotEffect> dotEffects;
 
-	uint8 attackType;
+	bool forceAttack;
 	uint8 trails;
+	uint8 animType;
 
 	uint32 weaponType;
 
 public:
+	enum AnimGenTypes {
+		GENERATE_NONE, // Uses animation as given - Default
+		GENERATE_RANGED, // Generates _light|_medium as well as appends _face with headshots
+		GENERATE_INTENSITY // generates _light|_medium only
+	};
 
 	CombatQueueCommand(const String& name, ZoneProcessServer* server) : QueueCommand(name, server) {
 
@@ -98,26 +103,38 @@ public:
 		accuracySkillMod = "";
 
 		areaRange = 0;
+		splashDamage = false;
 		areaAction = false;
 		coneAction = false;
 
 		combatSpam = "";
-		animationCRC = 0;
+		animation = "";
+		animType = GENERATE_NONE;
 
-		attackType = CombatManager::WEAPONATTACK;
+
+		forceAttack = false;
 		trails = CombatManager::DEFAULTTRAIL;
 
-		weaponType = CombatManager::ANYWEAPON;
+		weaponType = SharedWeaponObjectTemplate::ANYWEAPON;
+	}
+
+	void onFail(uint32 actioncntr, CreatureObject* creature, uint32 errorNumber) const {
+		// evidence shows that this has a custom OOR message.
+		if (errorNumber == TOOFAR) {
+			creature->sendSystemMessage("@cbt_spam:out_of_range_single"); // That target is out of range.
+			QueueCommand::onFail(actioncntr, creature, GENERALERROR);
+		} else {
+			QueueCommand::onFail(actioncntr, creature, errorNumber);
+		}
 	}
 
 	int doCombatAction(CreatureObject* creature, const uint64& target, const UnicodeString& arguments = "", ManagedReference<WeaponObject*> weapon = NULL) const {
 		ManagedReference<SceneObject*> targetObject = server->getZoneServer()->getObject(target);
-		PlayerManager* playerManager = server->getPlayerManager();
 
 		if (targetObject == NULL || !targetObject->isTangibleObject() || targetObject == creature)
 			return INVALIDTARGET;
 
-		float checkRange = range;
+		float rangeToCheck = range;
 
 		if (weapon == NULL) {
 			if(creature->getWeapon() == NULL) {
@@ -131,8 +148,8 @@ public:
 		if (!(getWeaponType() & weapon->getWeaponBitmask()))
 			return INVALIDWEAPON;
 
-		if (checkRange == -1)
-			checkRange = MAX(10.f, weapon->getMaxRange());
+		if (rangeToCheck == -1)
+			rangeToCheck = MAX(10.f, weapon->getMaxRange());
 
 		if (creature->isDead() || (creature->isPet() && creature->isIncapacitated()))
 			return INVALIDLOCOMOTION;
@@ -141,12 +158,48 @@ public:
 			PlayerObject* ghost = creature->getPlayerObject();
 
 			if (ghost != NULL) {
-				if (ghost->isOnLoadScreen()) {
+				if (ghost->isOnLoadScreen())
 					ghost->setOnLoadScreen(false);
-				}
 
-				if (ghost->isAFK()) {
+				if (ghost->isAFK())
 					return GENERALERROR;
+
+				ManagedReference<TangibleObject*> targetTano = targetObject.castTo<TangibleObject*>();
+
+				if (targetTano != NULL && creature->getFaction() != 0 && targetTano->getFaction() != 0 && targetTano->getFaction() != creature->getFaction() && ghost->getFactionStatus() != FactionStatus::OVERT) {
+					if (targetTano->isCreatureObject()) {
+						ManagedReference<CreatureObject*> targetCreature = targetObject.castTo<CreatureObject*>();
+
+						if (targetCreature != NULL) {
+							if (targetCreature->isPlayerCreature()) {
+								if (!CombatManager::instance()->areInDuel(creature, targetCreature)) {
+									PlayerObject* targetGhost = targetCreature->getPlayerObject();
+
+									if (targetGhost != NULL && targetGhost->getFactionStatus() == FactionStatus::OVERT) {
+										ghost->doFieldFactionChange(FactionStatus::OVERT);
+									}
+								}
+							} else if (targetCreature->isPet()) {
+								ManagedReference<CreatureObject*> targetOwner = targetCreature->getLinkedCreature().get();
+
+								if (targetOwner != NULL && !CombatManager::instance()->areInDuel(creature, targetOwner)) {
+									PlayerObject* targetGhost = targetOwner->getPlayerObject();
+
+									if (targetGhost != NULL && targetGhost->getFactionStatus() == FactionStatus::OVERT) {
+										ghost->doFieldFactionChange(FactionStatus::OVERT);
+									}
+								}
+							} else {
+								if (ghost->getFactionStatus() == FactionStatus::ONLEAVE)
+									ghost->doFieldFactionChange(FactionStatus::COVERT);
+							}
+						}
+					} else {
+						if (ghost->getFactionStatus() == FactionStatus::ONLEAVE && !(targetTano->getPvpStatusBitmask() & CreatureFlag::OVERT))
+							ghost->doFieldFactionChange(FactionStatus::COVERT);
+						else if ((targetTano->getPvpStatusBitmask() & CreatureFlag::OVERT))
+							ghost->doFieldFactionChange(FactionStatus::OVERT);
+					}
 				}
 			}
 		}
@@ -157,10 +210,10 @@ public:
 		if (creature->isProne() && (weapon->isMeleeWeapon() || poolsToDamage == 0))
 			return NOPRONE;
 
-		if (!targetObject->isInRange(creature, checkRange + targetObject->getTemplateRadius() + creature->getTemplateRadius()))
+		if(!checkDistance(creature, targetObject, rangeToCheck))
 			return TOOFAR;
 
-		if (weapon->isRangedWeapon() && creature->isProne() && targetObject->isInRange(creature, 7 + targetObject->getTemplateRadius() + creature->getTemplateRadius()))
+		if (weapon->isRangedWeapon() && creature->isProne() && checkDistance(targetObject, creature, 7))
 			return TOOCLOSE;
 
 		if (!CollisionManager::checkLineOfSight(creature, targetObject)) {
@@ -298,6 +351,10 @@ public:
 		return speed;
 	}
 
+	inline bool isSplashDamage() const {
+		return splashDamage;
+	}
+
 	inline bool isAreaAction() const {
 		return areaAction;
 	}
@@ -354,6 +411,10 @@ public:
 		this->coneAngle = i;
 	}
 
+	void setSplashDamage(bool b) {
+		this->splashDamage = b;
+	}
+
 	void setAreaAction(bool b) {
 		this->areaAction = b;
 	}
@@ -378,8 +439,119 @@ public:
 		this->speed = speedd;
 	}
 
-	inline uint32 getAnimationCRC() const {
-		return animationCRC;
+	void setAnimType(uint8 type) {
+		animType = type;
+	}
+
+	uint8 getAnimType() const {
+		return animType;
+	}
+
+	String getAnimationString() const {
+		return animation;
+	}
+
+	static inline String getIntensity(int threshold, int damage) {
+		if(damage > threshold)
+			return "_medium";
+		else
+			return "_light";
+	}
+
+	String getDefaultAttackAnimation(TangibleObject* attacker, WeaponObject* weapon, uint8 hitLocation, int damage) const {
+		enum lateralLocations {LEFT, CENTER, RIGHT};
+		static const char* headLocations[] =  {"attack_high_left", "attack_high_center", "attack_high_right"};
+		static const char* chestLocations[] = {"attack_mid_left", "attack_mid_center", "attack_mid_right"};
+		static const char* legLocations[] = {"attack_low_left", "attack_low_center", "attack_low_right"};
+
+		static const char* rangedAttacks[] = {"fire_1_single", "fire_3_single", "fire_5_single"};
+
+		String intensity = getIntensity(((uint32)weapon->getMaxDamage()) >> 2, damage);
+		StringBuffer buffer;
+
+		if (attacker->isDroidObject()) {
+			return "droid_attack" + intensity;
+		} else if (!attacker->isCreature()) {
+			if (weapon->isRangedWeapon()) {
+
+				buffer << rangedAttacks[System::random(2)];
+
+				buffer << intensity;
+
+				if (hitLocation == CombatManager::HIT_HEAD)
+					buffer << "_face";
+
+			} else {
+				if (hitLocation == 0)
+					hitLocation = System::random(5) + 1;
+
+				switch(hitLocation) {
+				case CombatManager::HIT_BODY:
+					buffer << chestLocations[CENTER];
+					break;
+				case CombatManager::HIT_LARM:
+					buffer << chestLocations[RIGHT];
+					break;
+				case CombatManager::HIT_RARM:
+					buffer << chestLocations[LEFT]; // these are purposely backwards - It's mirrored
+					break;
+				case CombatManager::HIT_LLEG:
+					buffer << legLocations[System::random(1) + 1];
+					break;
+				case CombatManager::HIT_RLEG:
+					buffer << legLocations[System::random(1)];
+					break;
+				case CombatManager::HIT_HEAD:
+					buffer << headLocations[System::random(2)];
+					break;
+				}
+
+				buffer << intensity;
+
+				// TODO: Actually sequence these
+				buffer << "_" << String::valueOf(System::random(3));
+			}
+		} else {
+			if (attacker->getGameObjectType() == SceneObjectType::DROIDCREATURE || attacker->getGameObjectType() == SceneObjectType::PROBOTCREATURE)
+				return "droid_attack" + intensity;
+			else if (weapon->isRangedWeapon())
+				return "creature_attack_ranged" + intensity;
+			else
+				return "creature_attack" + intensity;
+		}
+
+		//info("Generated Attack Animation- " + buffer.toString(), true);
+		return buffer.toString();
+	}
+
+	inline String generateAnimation(uint8 hitLocation, int weaponThreshold, int damage) const {
+		String anim = animation;
+
+		switch(animType) {
+		case GENERATE_NONE:
+			break;
+		case GENERATE_RANGED:
+		case GENERATE_INTENSITY:
+			anim += getIntensity(weaponThreshold, damage);
+
+			if (animType == GENERATE_INTENSITY)
+				return anim;
+
+			if (hitLocation == CombatManager::HIT_HEAD)
+				anim += "_face";
+
+			return anim;
+		}
+		//info("Generated Attack Animation- " + anim, true);
+		return anim;
+	}
+
+	virtual String getAnimation(TangibleObject* attacker, TangibleObject* defender, WeaponObject* weapon, uint8 hitLocation, int damage) const {
+
+		if (animation.isEmpty())
+			return getDefaultAttackAnimation(attacker, weapon, hitLocation, damage);
+
+		return generateAnimation(hitLocation, ((uint32)weapon->getMaxDamage()) >> 2, damage);
 	}
 
 	inline String getEffectString() const {
@@ -402,8 +574,8 @@ public:
 		return &(const_cast<CombatQueueCommand*>(this)->dotEffects);
 	}
 
-	void setAnimationCRC(uint32 animationCRC) {
-		this->animationCRC = animationCRC;
+	void setAnimationString(String anim) {
+		this->animation = anim;
 	}
 
 	void setCombatSpam(String combatSpam) {
@@ -663,12 +835,12 @@ public:
 
 	}
 
-	uint8 getAttackType() const {
-		return attackType;
+	bool isForceAttack() const {
+		return forceAttack;
 	}
 
-	void setAttackType(uint8 attackType) {
-		this->attackType = attackType;
+	void setForceAttack(bool forceAttack) {
+		this->forceAttack = forceAttack;
 	}
 
 	uint8 getTrails() const {

@@ -6,7 +6,8 @@
 #define CONCEALCOMMAND_H_
 
 #include "server/zone/objects/scene/SceneObject.h"
-#include "server/zone/templates/tangible/CamoKitTemplate.h"
+#include "templates/tangible/CamoKitTemplate.h"
+#include "server/zone/objects/creature/buffs/ConcealBuff.h"
 
 class ConcealCommand : public QueueCommand {
 public:
@@ -26,6 +27,14 @@ public:
 
 		ManagedReference<CreatureObject*> targetPlayer = server->getZoneServer()->getObject(target).castTo<CreatureObject*>();
 
+		uint32 crc = STRING_HASHCODE("skill_buff_mask_scent");
+
+		// Rangers can remove their own conceal buff by targeting nothing.
+		if(targetPlayer == NULL && creature->hasBuff(crc)) {
+			creature->removeBuff(crc);
+			return SUCCESS;
+		}
+
 		if(targetPlayer == NULL || creature->getZone() == NULL || !targetPlayer->isPlayerCreature()) {
 			creature->sendSystemMessage("@skl_use:sys_conceal_notplayer"); // You can only conceal yourself or another player.
 			return INVALIDTARGET;
@@ -33,11 +42,9 @@ public:
 
 		Locker clocker(targetPlayer, creature);
 
-		if(targetPlayer->getDistanceTo(creature) > 10.0) {
+		if(!checkDistance(creature, targetPlayer, 10.0f)) {
 			return GENERALERROR;
 		}
-
-		uint32 crc = STRING_HASHCODE("skill_buff_mask_scent");
 
 		if(targetPlayer->hasBuff(crc) || targetPlayer->getSkillModFromBuffs("private_conceal") > 0) {
 			creature->sendSystemMessage("@skl_use:sys_target_concealed"); // Your target is already concealed.
@@ -60,9 +67,9 @@ public:
 		}
 
 		for (int i = 0; i < objects.size(); ++i) {
-			SceneObject* object = cast<SceneObject*>(objects.get(i));
+			SceneObject* object = static_cast<SceneObject*>(objects.get(i));
 
-			if (object->isCreatureObject() && creature->isInRange(object, 32)) {
+			if (object->isCreatureObject() && checkDistance(creature, object, 32)) {
 				CreatureObject* creo = cast<CreatureObject*>(object);
 
 				if(!creo->isDead() && (creo->getPvpStatusBitmask() & CreatureFlag::ATTACKABLE)) {
@@ -121,7 +128,7 @@ public:
 		int duration = 60 + (((float)(camoMod / 100.0f)) * 200);
 
 
-		ManagedReference<Buff*> buff = new Buff(targetPlayer, crc, duration, BuffType::SKILL);
+		ManagedReference<ConcealBuff*> buff = new ConcealBuff(targetPlayer, creature, crc, duration);
 
 		Locker blocker(buff);
 

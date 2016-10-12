@@ -28,19 +28,21 @@
 #include "server/zone/objects/resource/ResourceSpawn.h"
 #include "server/zone/objects/resource/ResourceContainer.h"
 #include "server/zone/Zone.h"
-#include "server/zone/templates/tangible/SharedInstallationObjectTemplate.h"
+#include "templates/installation/SharedInstallationObjectTemplate.h"
 #include "SyncrhonizedUiListenInstallationTask.h"
 #include "server/zone/objects/installation/components/TurretObserver.h"
 #include "server/zone/objects/tangible/TangibleObject.h"
-#include "server/zone/objects/building/BuildingObject.h"
 #include "components/TurretDataComponent.h"
 #include "server/zone/objects/player/FactionStatus.h"
 #include "server/zone/objects/tangible/wearables/ArmorObject.h"
-#include "server/zone/templates/tangible/ArmorObjectTemplate.h"
-#include "server/zone/objects/tangible/OptionBitmask.h"
+#include "templates/params/OptionBitmask.h"
+#include "templates/params/creature/CreatureFlag.h"
 
 void InstallationObjectImplementation::loadTemplateData(SharedObjectTemplate* templateData) {
 	StructureObjectImplementation::loadTemplateData(templateData);
+
+	if (!templateData->isSharedInstallationObjectTemplate())
+		return;
 
 	SharedInstallationObjectTemplate* inso = dynamic_cast<SharedInstallationObjectTemplate*>(templateData);
 
@@ -90,8 +92,10 @@ void InstallationObjectImplementation::fillAttributeList(AttributeListMessage* a
 void InstallationObjectImplementation::broadcastMessage(BasePacket* message, bool sendSelf) {
 	Zone* zone = getZone();
 
-	if (zone == NULL)
+	if (zone == NULL) {
+		delete message;
 		return;
+	}
 
 	Locker zoneLocker(zone);
 
@@ -341,13 +345,15 @@ bool InstallationObjectImplementation::updateMaintenance(Time& workingTime) {
 
 	addMaintenance(-1.0f * payAmount);
 
-	if (isOperating()) {
-		float energyAmount = (elapsedTime / 3600.0) * getBasePowerRate();
+	int basePowerRate = getBasePowerRate();
+
+	if (isOperating() && basePowerRate != 0) {
+		float energyAmount = (elapsedTime / 3600.0) * basePowerRate;
 
 		if (energyAmount > surplusPower) {
 			energyAmount = surplusPower;
 
-			float workPowerPermitted = (surplusPower / getBasePowerRate()) * 3600;
+			float workPowerPermitted = (surplusPower / basePowerRate) * 3600;
 
 			if (workPowerPermitted < elapsedTime) {
 				Time workTill(lastMaintenanceTime.getTime() + (int) workPowerPermitted);
@@ -688,18 +694,6 @@ void InstallationObjectImplementation::updateStructureStatus() {
 	}
 }
 
-void InstallationObjectImplementation::addDefender(SceneObject* defender) {
-	StructureObjectImplementation::addDefender(defender);
-
-	if (isTurret() && defender->isCreatureObject()) {
-		TurretDataComponent* turretData = cast<TurretDataComponent*>(getDataObjectComponent()->get());
-
-		if (turretData != NULL) {
-			turretData->addTarget(cast<CreatureObject*>(defender));
-		}
-	}
-}
-
 bool InstallationObjectImplementation::isAggressiveTo(CreatureObject* target) {
 	if (!isAttackableBy(target) || target->isVehicleObject())
 		return false;
@@ -791,7 +785,11 @@ void InstallationObjectImplementation::createChildObjects() {
 	}
 }
 
-float InstallationObjectImplementation::getHitChance(){
+float InstallationObjectImplementation::getHitChance() {
 		SharedInstallationObjectTemplate* inso = dynamic_cast<SharedInstallationObjectTemplate*>(getObjectTemplate());
+
+		if (inso == NULL)
+			return 0;
+
 		return inso->getChanceHit();
 }

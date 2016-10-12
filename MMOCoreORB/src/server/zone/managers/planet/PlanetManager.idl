@@ -17,21 +17,20 @@ import system.util.Vector;
 import server.zone.objects.region.CityRegion;
 import server.zone.objects.scene.variables.StringId;
 import server.zone.managers.weather.WeatherManager;
-import server.zone.managers.objectcontroller.ObjectController;
 import server.zone.managers.gcw.GCWManager;
 import server.zone.objects.creature.CreatureObject;
 import server.zone.objects.scene.SceneObject;
 include server.zone.managers.planet.RegionMap;
-include server.zone.managers.terrain.TerrainManager;
+include terrain.manager.TerrainManager;
 include server.zone.managers.planet.MissionTargetMap;
-include server.zone.templates.snapshot.WorldSnapshotNode;
-include server.zone.templates.snapshot.WorldSnapshotIff;
+include templates.snapshot.WorldSnapshotNode;
+include templates.snapshot.WorldSnapshotIff;
 include server.zone.managers.planet.PlanetTravelPointList;
 include server.zone.managers.planet.PlanetTravelPoint;
 include engine.lua.LuaObject;
 include server.zone.objects.building.ShuttleMap;
 include server.zone.objects.building.tasks.ShuttleDepartureTask;
-include server.zone.objects.creature.CreaturePosture;
+include templates.params.creature.CreaturePosture;
 include server.zone.managers.planet.ClientPoiDataTable;
 include server.zone.managers.planet.TravelFare;
 import server.zone.objects.area.ActiveArea;
@@ -65,7 +64,7 @@ class PlanetManager extends ManagedService implements Logger {
 	public static final int SHUTTLEPORT = 0;
 	public static final int STARPORT = 1;
 
-	protected WeatherManager weatherManager;
+	protected transient WeatherManager weatherManager;
 
 	protected transient GCWManager gcwManager;
 
@@ -91,7 +90,7 @@ class PlanetManager extends ManagedService implements Logger {
 		Logger.setLogging(false);
 		Logger.setGlobalLogging(true);
 
-		terrainManager = new TerrainManager(zone);
+		terrainManager = new TerrainManager();
 
 		if (terrainManager.initialize("terrain/" + zone.getZoneName() + ".trn")) {
 			Logger.info("Loaded terrain file successfully.");

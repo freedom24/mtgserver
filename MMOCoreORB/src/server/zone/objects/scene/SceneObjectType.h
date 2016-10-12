@@ -189,6 +189,8 @@ public:
 	const static int EVENTPERK = 0x401A;
 	const static int LOTTERYDROID = 0x401B;
 	const static int SCAVENGERCHEST = 0x401C;
+	const static int SHUTTLEBEACON = 0x401D;
+	const static int SCAVENGERDROID = 0x401E;
 	/// end not in client ***************
 
 	const static int TOOL = 0x8000;
@@ -289,10 +291,11 @@ public:
 	const static int PETDEED = 0x800003;
 	const static int DROIDDEED = 0x800004;
 	const static int VEHICLEDEED = 0x800005;
+	const static int RESOURCEDEED = 0x800006;
 
 	// Not in client **********
-	const static int RESOURCEDEED = 0x800006;
 	const static int EVENTPERKDEED = 0x800007;
+	const static int VETHARVESTERDEED = 0x800008;
 	// ************************
 
 	const static int CLOTHING = 0x1000000;
@@ -325,7 +328,6 @@ public:
 	const static int MISSIONSPAWNAREA = 0x2000002;
 	const static int MISSIONRECONAREA = 0x2000003;
 	const static int SPAWNAREA = 0x2000004;
-	const static int GARAGEAREA = 0x2000006;
 	const static int ACTIVEAREA = 0x2000007;
 	const static int CAMPAREA = 0x2000009;
 	const static int FSVILLAGEAREA = 0x200000A;

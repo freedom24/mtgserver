@@ -6,7 +6,8 @@
 #define STRUCTUREMANAGER_H_
 
 #include "engine/engine.h"
-#include "server/zone/managers/templates/TemplateManager.h"
+#include "templates/manager/TemplateManager.h"
+#include "templates/tangible/SharedStructureObjectTemplate.h"
 
 namespace server {
 namespace zone {
@@ -191,7 +192,7 @@ public:
 	 */
 	void withdrawMaintenance(StructureObject* structure, CreatureObject* creature, int amount);
 
-	int getStructureFootprint(SharedObjectTemplate* objectTemplate, int angle, float& l0, float& w0, float& l1, float& w1);
+	int getStructureFootprint(SharedStructureObjectTemplate* objectTemplate, int angle, float& l0, float& w0, float& l1, float& w1);
 
 	bool isInStructureFootprint(StructureObject* structure, float positionX, float positionY, int extraFootprintMargin);
 

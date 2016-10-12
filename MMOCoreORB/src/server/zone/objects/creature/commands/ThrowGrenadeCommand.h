@@ -6,7 +6,7 @@
 #define THROWGRENADECOMMAND_H_
 
 #include "server/zone/objects/scene/SceneObject.h"
-#include "engine/task/ScheduledTask.h"
+#include "engine/core/TaskManager.h"
 
 class ThrowGrenadeCommand : public CombatQueueCommand {
 public:
@@ -66,11 +66,10 @@ public:
 				// We need to give some time for the combat animation to start playing before destroying the tano
 				// otherwise our character will play the wrong animations
 
-				SCHEDULE_TASK_1(grenade, 100, {
-
-					Locker locker(grenade_p);
-					grenade_p->decreaseUseCount();
-				});
+				Core::getTaskManager()->scheduleTask([grenade] {
+					Locker lock(grenade);
+					grenade->decreaseUseCount();
+				}, "ThrowGrenadeTanoDecrementTask", 100);
 			}
 
 			return result;
@@ -80,6 +79,32 @@ public:
 		}
 
 		return GENERALERROR;
+	}
+
+	String getAnimation(TangibleObject* attacker, TangibleObject* defender, WeaponObject* weapon, uint8 hitLocation, int damage) const {
+		SharedWeaponObjectTemplate* weaponData = cast<SharedWeaponObjectTemplate*>(weapon->getObjectTemplate());
+
+		if (weaponData == NULL) {
+			warning("Null weaponData in ThrowGrenadeCommand::getAnimation");
+			return "";
+		}
+
+		String type = weaponData->getAnimationType();
+		if (type.isEmpty())
+			return "throw_grenade";
+
+		int range = attacker->getWorldPosition().distanceTo(defender->getWorldPosition());
+
+		String distance = "";
+		if (range < 10) {
+			distance = "_near_";
+		} else if (range < 20) {
+			distance = "_medium_";
+		} else {
+			distance = "_far_";
+		}
+
+		return "throw_grenade" + distance + type;
 	}
 
 	float getCommandDuration(CreatureObject *object, const UnicodeString& arguments) const {

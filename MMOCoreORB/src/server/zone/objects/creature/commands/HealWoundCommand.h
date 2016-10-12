@@ -7,7 +7,6 @@
 
 #include "server/zone/objects/scene/SceneObject.h"
 #include "server/zone/objects/tangible/pharmaceutical/WoundPack.h"
-#include "server/zone/objects/tangible/pharmaceutical/RangedStimPack.h"
 #include "server/zone/ZoneServer.h"
 #include "server/zone/managers/player/PlayerManager.h"
 #include "server/zone/objects/creature/events/InjuryTreatmentTask.h"
@@ -203,20 +202,16 @@ public:
 			for (int i = 0; i < inventory->getContainerObjectsSize(); i++) {
 				SceneObject* object = inventory->getContainerObject(i);
 
-				if (!object->isTangibleObject())
+				if (!object->isPharmaceuticalObject())
 					continue;
 
-				TangibleObject* item = cast<TangibleObject*>( object);
+				PharmaceuticalObject* pharma = cast<PharmaceuticalObject*>(object);
 
-				if (item->isPharmaceuticalObject()) {
-					PharmaceuticalObject* pharma = cast<PharmaceuticalObject*>( item);
+				if (pharma->isWoundPack()) {
+					WoundPack* woundPack = cast<WoundPack*>(pharma);
 
-					if (pharma->isWoundPack()) {
-						WoundPack* woundPack = cast<WoundPack*>( pharma);
-
-						if (woundPack->getMedicineUseRequired() <= medicineUse && woundPack->getAttribute() == attribute)
-							return woundPack;
-					}
+					if (woundPack->getMedicineUseRequired() <= medicineUse && woundPack->getAttribute() == attribute)
+						return woundPack;
 				}
 			}
 		}
@@ -255,7 +250,7 @@ public:
 		if ((creatureTarget->isAiAgent() && !creatureTarget->isPet()) || creatureTarget->isDroidObject() || creatureTarget->isVehicleObject() || creatureTarget->isDead() || creatureTarget->isRidingMount() || creatureTarget->isAttackableBy(creature))
 			creatureTarget = creature;
 
-		if (!creature->isInRange(creatureTarget, range + creatureTarget->getTemplateRadius() + creature->getTemplateRadius()))
+		if(!checkDistance(creature, creatureTarget, range))
 			return TOOFAR;
 
 		uint8 attribute = CreatureAttribute::UNKNOWN;

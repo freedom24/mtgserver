@@ -13,7 +13,7 @@
 #include "server/login/packets/ErrorMessage.h"
 #include "server/login/account/Account.h"
 #include "server/login/objects/CharacterList.h"
-#include "server/zone/managers/player/PlayerManager.h"
+#include "server/login/account/AccountManager.h"
 
 #include "ClientPermissionsMessage.h"
 
@@ -26,7 +26,7 @@ public:
 	ClientIDMessageCallback(ZoneClientSession* client, ZoneProcessServer* server) :
 		MessageCallback(client, server), dataLen(0), sessionID(0), accountID(0) {
 
-		taskqueue = 8;
+
 
 	}
 
@@ -84,13 +84,15 @@ public:
 					//client->setAccount(account);
 					//account->addZoneSession(client);
 
-					ManagedReference<Account*> account = server->getPlayerManager()->getAccount(accountID);
+					ManagedReference<Account*> account = AccountManager::getAccount(accountID, true);
 					if (account == NULL)
 						return;
 
+					Locker alocker(account);
+
 					client->resetCharacters();
 
-					CharacterList* characters = account->getCharacterList();
+					Reference<CharacterList*> characters = account->getCharacterList();
 					GalaxyBanEntry* galaxyBan = account->getGalaxyBan(server->getZoneServer()->getGalaxyID());
 
 					if(galaxyBan != NULL) {

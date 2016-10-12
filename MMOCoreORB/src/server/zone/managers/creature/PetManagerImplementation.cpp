@@ -5,7 +5,7 @@
 #include "server/zone/managers/name/NameManager.h"
 #include "server/zone/objects/player/PlayerObject.h"
 #include "server/zone/managers/player/PlayerManager.h"
-#include "server/zone/managers/templates/TemplateManager.h"
+#include "templates/manager/TemplateManager.h"
 #include "server/zone/objects/creature/ai/AiAgent.h"
 #include "server/zone/objects/creature/ai/DroidObject.h"
 #include "server/zone/objects/creature/ai/Creature.h"
@@ -13,9 +13,9 @@
 #include "server/zone/objects/intangible/tasks/PetControlDeviceStoreObjectTask.h"
 #include "server/zone/objects/intangible/PetControlDevice.h"
 #include "server/zone/objects/intangible/tasks/EnqueuePetCommand.h"
-#include "server/zone/templates/datatables/DataTableIff.h"
-#include "server/zone/templates/datatables/DataTableRow.h"
-#include "server/zone/templates/params/primitives/StringParam.h"
+#include "templates/datatables/DataTableIff.h"
+#include "templates/datatables/DataTableRow.h"
+#include "templates/params/primitives/StringParam.h"
 #include "server/chat/ChatManager.h"
 
 void PetManagerImplementation::loadLuaConfig() {
@@ -51,6 +51,9 @@ void PetManagerImplementation::loadLuaConfig() {
 	luaObject.pop();
 
 	info("Loaded " + String::valueOf(mountSpeedData.size()) + " mount speeds.", true);
+
+	delete lua;
+	lua = NULL;
 }
 
 void PetManagerImplementation::loadValidMountScaleRanges() {
@@ -334,7 +337,7 @@ bool PetManagerImplementation::handleCommandTraining(CreatureObject* speaker, Ai
 			message << stf << ":confused";
 			StringIdChatParameter chat;
 			chat.setStringId(message.toString());
-			pet->getZoneServer()->getChatManager()->broadcastMessage(pet,chat,0,0,0);
+			pet->getZoneServer()->getChatManager()->broadcastChatMessage(pet,chat,0,0,0);
 		} else {
 			pet->showFlyText("npc_reaction/flytext","confused", 204, 0, 0);  // "?"
 		}
@@ -399,7 +402,7 @@ bool PetManagerImplementation::handleCommandTraining(CreatureObject* speaker, Ai
 			message << stf << ":end_convo";
 			StringIdChatParameter chat;
 			chat.setStringId(message.toString());
-			pet->getZoneServer()->getChatManager()->broadcastMessage(pet,chat,0,0,0);
+			pet->getZoneServer()->getChatManager()->broadcastChatMessage(pet,chat,0,0,0);
 		} else {
 			pet->showFlyText("npc_reaction/flytext","threaten", 204, 0, 0);  // "?"
 			speaker->sendSystemMessage("@pet/pet_menu:pet_learn"); // You teach your pet a new command.

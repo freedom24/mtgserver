@@ -83,13 +83,14 @@ MindBlast1Command = {
 	  )
 	},
 
-	animationCRC = hashCode("force_mind_blast_1_particle_level_1_light"),
+	animation = "force_mind_blast_1_particle_level_1", 
+	animType = GENERATE_INTENSITY,
 
 	combatSpam = "mindblast1",
 
 	poolsToDamage = RANDOM_ATTRIBUTE,
 
-	attackType = FORCEATTACK,
+	forceAttack = true,
 	damageType = LIGHTSABER_DAMAGE,
 
 	range = 32

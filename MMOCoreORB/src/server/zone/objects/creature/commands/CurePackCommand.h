@@ -57,20 +57,16 @@ public:
 			for (int i = 0; i < inventory->getContainerObjectsSize(); ++i) {
 				SceneObject* object = inventory->getContainerObject(i);
 
-				if (!object->isTangibleObject())
+				if (!object->isPharmaceuticalObject())
 					continue;
 
-				TangibleObject* item = cast<TangibleObject*>( object);
+				PharmaceuticalObject* pharma = cast<PharmaceuticalObject*>(object);
 
-				if (item->isPharmaceuticalObject()) {
-					PharmaceuticalObject* pharma = cast<PharmaceuticalObject*>( item);
+				if (pharma->isCurePack()) {
+					CurePack* curePack = cast<CurePack*>(pharma);
 
-					if (pharma->isCurePack()) {
-						CurePack* curePack = cast<CurePack*>( pharma);
-
-						if (curePack->getMedicineUseRequired() <= medicineUse && curePack->getState() == state)
-							return curePack;
-					}
+					if (curePack->getMedicineUseRequired() <= medicineUse && curePack->getState() == state)
+						return curePack;
 				}
 			}
 		}
@@ -200,13 +196,15 @@ public:
 		if (zone == NULL)
 			return;
 
+
+		// TODO: Convert this to a CombatManager::getAreaTargets() call
 		try {
 			SortedVector<QuadTreeEntry*> closeObjects;
 			CloseObjectsVector* vec = (CloseObjectsVector*) areaCenter->getCloseObjects();
 			vec->safeCopyTo(closeObjects);
 
 			for (int i = 0; i < closeObjects.size(); i++) {
-				SceneObject* object = cast<SceneObject*>( closeObjects.get(i));
+				SceneObject* object = static_cast<SceneObject*>( closeObjects.get(i));
 
 				if (!object->isPlayerCreature() && !object->isPet())
 					continue;
@@ -214,7 +212,7 @@ public:
 				if (object == areaCenter || object->isDroidObject())
 					continue;
 
-				if (!areaCenter->isInRange(object, range))
+				if (areaCenter->getWorldPosition().distanceTo(object->getWorldPosition()) - object->getTemplateRadius() > range)
 					continue;
 
 				CreatureObject* creatureTarget = cast<CreatureObject*>( object);
@@ -377,7 +375,7 @@ public:
 			}
 		}
 
-		if (!creature->isInRange(targetCreature, range + creature->getTemplateRadius() + targetCreature->getTemplateRadius()))
+		if(!checkDistance(creature, targetCreature, range))
 			return TOOFAR;
 
 		int mindCostNew = creature->calculateCostAdjustment(CreatureAttribute::FOCUS, mindCost);

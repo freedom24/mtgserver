@@ -10,7 +10,6 @@
 #include "server/zone/objects/waypoint/WaypointObject.h"
 #include "server/zone/Zone.h"
 #include "server/zone/ZoneServer.h"
-#include "server/zone/managers/object/ObjectManager.h"
 #include "server/zone/managers/mission/MissionManager.h"
 #include "server/zone/managers/creature/CreatureManager.h"
 #include "server/zone/managers/player/PlayerManager.h"
@@ -588,7 +587,7 @@ int BountyMissionObjectiveImplementation::handleNpcTargetReceivesDamage(ManagedO
 			diffString = "medium";
 		}
 
-		target->getZoneServer()->getChatManager()->broadcastMessage(npcTarget, "@mission/mission_bounty_neutral_" + diffString + ":m" + String::valueOf(mission->getMissionNumber()) + "v", 0, 0, 0);
+		target->getZoneServer()->getChatManager()->broadcastChatMessage(npcTarget, "@mission/mission_bounty_neutral_" + diffString + ":m" + String::valueOf(mission->getMissionNumber()) + "v", 0, 0, 0);
 		return 1;
 	}
 

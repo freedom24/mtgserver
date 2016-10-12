@@ -104,13 +104,15 @@ public:
 		if (zone == NULL)
 			return;
 
+
+		//TODO: Convert this to a CombatManager::getAreaTargets call
 		try {
 			SortedVector<QuadTreeEntry*> closeObjects;
 			CloseObjectsVector* vec = (CloseObjectsVector*) areaCenter->getCloseObjects();
 			vec->safeCopyTo(closeObjects);
 
 			for (int i = 0; i < closeObjects.size(); i++) {
-				SceneObject* object = cast<SceneObject*>( closeObjects.get(i));
+				SceneObject* object = static_cast<SceneObject*>( closeObjects.get(i));
 
 				if (!object->isCreatureObject())
 					continue;
@@ -118,7 +120,7 @@ public:
 				if (object == areaCenter || object == creature)
 					continue;
 
-				if (!areaCenter->isInRange(object, range))
+				if (areaCenter->getWorldPosition().distanceTo(object->getWorldPosition()) - object->getTemplateRadius() > range)
 					continue;
 
 				CreatureObject* creatureTarget = cast<CreatureObject*>( object);
@@ -139,12 +141,7 @@ public:
 		}
 	}
 
-	void doAreaMedicActionTarget(CreatureObject* creature, CreatureObject* creatureTarget, DotPack* pharma)	const {
-		DotPack* dotPack = NULL;
-
-		if (pharma->isPoisonDeliveryUnit() || pharma->isDiseaseDeliveryUnit())
-			dotPack = cast<DotPack*>( pharma);
-
+	void doAreaMedicActionTarget(CreatureObject* creature, CreatureObject* creatureTarget, DotPack* dotPack) const {
 		int dotPower = dotPack->calculatePower(creature);
 
 		//sendDotMessage(creature, creatureTarget, dotPower);
@@ -260,10 +257,8 @@ public:
 
 		int	range = int(dotPack->getRange() + creature->getSkillMod("healing_range") / 100 * 14);
 
-		if (creature != creatureTarget && !creature->isInRange(creatureTarget, range + creatureTarget->getTemplateRadius() + creature->getTemplateRadius())){
-			creature->sendSystemMessage("@error_message:target_out_of_range"); //Your target is out of range for this action.
-			return TOOFAR;
-		}
+		if(!checkDistance(creature, creatureTarget, range))
+					return TOOFAR;
 		//timer
 		if (!creature->checkCooldownRecovery(skillName)) {
 			creature->sendSystemMessage("@healing_response:healing_must_wait"); //You must wait before you can do that.
@@ -361,7 +356,7 @@ public:
 			dotPack->decreaseUseCount();
 		}
 
-		doAnimationsRange(creature, creatureTarget, dotPack->getObjectID(), creature->getDistanceTo(creatureTarget), dotPack->isArea());
+		doAnimationsRange(creature, creatureTarget, dotPack->getObjectID(), creature->getWorldPosition().distanceTo(creatureTarget->getWorldPosition()), dotPack->isArea());
 
 		creature->notifyObservers(ObserverEventType::MEDPACKUSED);
 

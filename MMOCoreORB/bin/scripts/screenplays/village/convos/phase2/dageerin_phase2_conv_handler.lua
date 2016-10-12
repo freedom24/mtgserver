@@ -1,23 +1,21 @@
 local ObjectManager = require("managers.object.object_manager")
-local VillageJediManagerCommon = require("managers.jedi.village.village_jedi_manager_common")
 local QuestManager = require("managers.quest.quest_manager")
-local FsSad = require("managers.jedi.village.phase2.fs_sad")
 
-villageDageerinPhase2ConvoHandler = {  }
+villageDageerinPhase2ConvoHandler = conv_handler:new {}
 
-function villageDageerinPhase2ConvoHandler:getInitialScreen(pPlayer, pNpc, pConversationTemplate)
-	local convoTemplate = LuaConversationTemplate(pConversationTemplate)
+function villageDageerinPhase2ConvoHandler:getInitialScreen(pPlayer, pNpc, pConvTemplate)
+	local convoTemplate = LuaConversationTemplate(pConvTemplate)
 
 	if (VillageJediManagerTownship:getCurrentPhase() ~= 2) then
 		return convoTemplate:getScreen("intro_not_eligible")
 	elseif (QuestManager.hasCompletedQuest(pPlayer, QuestManager.quests.FS_QUESTS_SAD_FINISH)) then
 		return convoTemplate:getScreen("intro_completed_quest")
+	elseif ((FsSad:hasActiveNonReturnTask(pPlayer) or FsSad:hasActiveReturnTask(pPlayer)) and not SuiRadiationSensor:hasSensor(pPlayer)) then
+		return convoTemplate:getScreen("intro_need_new_sensor")
 	elseif (FsSad:hasActiveNonReturnTask(pPlayer)) then
 		return convoTemplate:getScreen("intro_on_task")
 	elseif (FsSad:hasActiveReturnTask(pPlayer) and FsSad:hasExceededLimit(pPlayer)) then
 		return convoTemplate:getScreen("intro_max_tasks_for_day")
-	elseif ((FsSad:hasActiveNonReturnTask(pPlayer) or FsSad:hasActiveReturnTask(pPlayer)) and not SuiRadiationSensor:hasSensor(pPlayer)) then
-		return convoTemplate:getScreen("intro_need_new_sensor")
 	elseif (QuestManager.hasActiveQuest(pPlayer, QuestManager.quests.FS_QUESTS_SAD_RETURN1)) then
 		return convoTemplate:getScreen("intro_completed_one")
 	elseif (QuestManager.hasActiveQuest(pPlayer, QuestManager.quests.FS_QUESTS_SAD_RETURN2)) then
@@ -47,35 +45,21 @@ function villageDageerinPhase2ConvoHandler:getInitialScreen(pPlayer, pNpc, pConv
 	end
 end
 
-function villageDageerinPhase2ConvoHandler:runScreenHandlers(conversationTemplate, conversingPlayer, conversingNPC, selectedOption, conversationScreen)
-	local screen = LuaConversationScreen(conversationScreen)
+function villageDageerinPhase2ConvoHandler:runScreenHandlers(pConvTemplate, pPlayer, pNpc, selectedOption, pConvScreen)
+	local screen = LuaConversationScreen(pConvScreen)
 	local screenID = screen:getScreenID()
 
 	if (screenID == "tracking_device" or screenID == "intro_need_new_sensor") then
-		SuiRadiationSensor:giveSensor(conversingPlayer)
+		SuiRadiationSensor:giveSensor(pPlayer)
 
 		if (screenID == "tracking_device") then
-			FsSad:acceptNextTask(conversingPlayer)
+			FsSad:acceptNextTask(pPlayer)
 		end
 	elseif (screenID == "come_back_when_eliminated" or screenID == "intro_reward") then
-		FsSad:acceptNextTask(conversingPlayer)
+		FsSad:acceptNextTask(pPlayer)
+	elseif (screenID == "intro_on_task") then
+		FsSad:recreateCampIfDespawned(pPlayer)
 	end
 
-	return conversationScreen
-end
-
-function villageDageerinPhase2ConvoHandler:getNextConversationScreen(pConversationTemplate, pPlayer, selectedOption, pConversingNpc)
-	local pConversationSession = CreatureObject(pPlayer):getConversationSession()
-	local pLastConversationScreen = nil
-	if (pConversationSession ~= nil) then
-		local conversationSession = LuaConversationSession(pConversationSession)
-		pLastConversationScreen = conversationSession:getLastConversationScreen()
-	end
-	local conversationTemplate = LuaConversationTemplate(pConversationTemplate)
-	if (pLastConversationScreen ~= nil) then
-		local lastConversationScreen = LuaConversationScreen(pLastConversationScreen)
-		local optionLink = lastConversationScreen:getOptionLink(selectedOption)
-		return conversationTemplate:getScreen(optionLink)
-	end
-	return self:getInitialScreen(pPlayer, pConversingNpc, pConversationTemplate)
+	return pConvScreen
 end

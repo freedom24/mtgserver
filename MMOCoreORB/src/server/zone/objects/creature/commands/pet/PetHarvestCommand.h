@@ -4,7 +4,7 @@
 
 #include "server/zone/objects/creature/commands/QueueCommand.h"
 #include "server/zone/objects/creature/ai/AiAgent.h"
-#include "server/zone/objects/scene/ObserverEventType.h"
+#include "templates/params/ObserverEventType.h"
 #include "server/zone/managers/creature/PetManager.h"
 #include "server/zone/objects/tangible/components/droid/DroidHarvestModuleDataComponent.h"
 #include "server/zone/objects/intangible/tasks/EnqueuePetCommand.h"
@@ -64,6 +64,7 @@ public:
 		}
 
 		Creature* cr = cast<Creature*>(target.get());
+
 		if (cr->getZone() == NULL)
 			return GENERALERROR;
 		// Check if droid is spawned
@@ -85,7 +86,7 @@ public:
 			return GENERALERROR;
 		}
 
-		if (!target->isInRange(droid,7.0f)) { // this should run the droid to the target for harvesting
+		if (!checkDistance(target, droid,7.0f)) { // this should run the droid to the target for harvesting
 			module->addHarvestTarget(droidTarget,true);
 			droid->setTargetObject(target);
 			droid->activateMovementEvent();
@@ -139,23 +140,29 @@ public:
 			if(!cr->getBoneType().isEmpty()) {
 				types.add(236);
 			}
+
 			if(types.size() > 0)
-				type = types.get(System::random(types.size() -1));
+				type = types.get(System::random(types.size() - 1));
 		}
 
 		if (type == 0) {
 			owner->sendSystemMessage("@pet/droid_modules:no_resources_to_harvest");
 			return GENERALERROR;
 		}
+
 		if (cr->getDnaState() == CreatureManager::DNADEATH) {
 			owner->sendSystemMessage("@pet/droid_modules:no_resources_to_harvest");
 			return GENERALERROR;
 		}
+
 		tpLock.release();
 		Locker clock(target,droid);
+
 		ManagedReference<CreatureManager*> manager = cr->getZone()->getCreatureManager();
 		manager->droidHarvest(cr, droid, type,bonus);
 		droid->restoreFollowObject();
+
+
 		return SUCCESS;
 	}
 

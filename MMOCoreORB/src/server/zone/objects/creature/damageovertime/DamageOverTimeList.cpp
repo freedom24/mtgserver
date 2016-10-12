@@ -8,7 +8,7 @@
 #include "DamageOverTimeList.h"
 #include "server/zone/objects/creature/CreatureObject.h"
 #include "server/zone/objects/creature/commands/effect/CommandEffect.h"
-#include "server/zone/objects/creature/CreatureAttribute.h"
+#include "templates/params/creature/CreatureAttribute.h"
 
 uint64 DamageOverTimeList::activateDots(CreatureObject* victim) {
 	uint64 states = 0;
@@ -197,7 +197,7 @@ uint32 DamageOverTimeList::addDot(CreatureObject* victim,
 
 	Time nTime = newDot.getNextTick();
 
-	if (isEmpty() || nextTick.isPast() || nTime.compareTo(nextTick) > 0)
+	if (isEmpty() || nTime.compareTo(nextTick) > 0)
 		nextTick = nTime;
 
 	if(oldStrength == 0)
@@ -328,7 +328,6 @@ void DamageOverTimeList::clear(CreatureObject* creature) {
 
 void DamageOverTimeList::multiplyAllDOTDurations(float multiplier) {
 	Locker locker(&guard);
-	dot = false;
 
 	if(!hasDot())
 		return;

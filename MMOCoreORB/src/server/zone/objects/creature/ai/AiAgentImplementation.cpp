@@ -7,7 +7,6 @@
 
 #include <engine/core/ManagedReference.h>
 #include <engine/core/ManagedWeakReference.h>
-#include <engine/util/Singleton.h>
 #include <engine/util/u3d/CloseObjectsVector.h>
 #include <engine/util/u3d/Coordinate.h>
 #include <engine/util/u3d/Quaternion.h>
@@ -37,7 +36,6 @@
 #include "server/zone/managers/creature/CreatureManager.h"
 #include "server/zone/managers/creature/PetManager.h"
 #include "server/zone/managers/planet/PlanetManager.h"
-#include "server/zone/managers/player/PlayerManager.h"
 #include "server/zone/managers/reaction/ReactionManager.h"
 #include "server/zone/objects/cell/CellObject.h"
 #include "server/zone/objects/creature/ai/AiAgent.h"
@@ -67,24 +65,24 @@
 #include "server/zone/packets/scene/LightUpdateTransformWithParentMessage.h"
 #include "server/zone/packets/scene/UpdateTransformMessage.h"
 #include "server/zone/packets/scene/UpdateTransformWithParentMessage.h"
-#include "server/zone/templates/AiTemplate.h"
-#include "server/zone/templates/tangible/SharedCreatureObjectTemplate.h"
-#include "server/zone/templates/mobile/CreatureTemplate.h"
-#include "server/zone/templates/mobile/MobileOutfit.h"
-#include "server/zone/templates/mobile/MobileOutfitGroup.h"
-#include "server/zone/templates/SharedObjectTemplate.h"
-#include "server/zone//ZoneReference.h"
+#include "templates/AiTemplate.h"
+#include "templates/creature/SharedCreatureObjectTemplate.h"
+#include "server/zone/objects/creature/ai/CreatureTemplate.h"
+#include "templates/mobile/MobileOutfit.h"
+#include "templates/mobile/MobileOutfitGroup.h"
+#include "templates/SharedObjectTemplate.h"
+#include "server/zone/ZoneReference.h"
 #include "server/zone/objects/player/FactionStatus.h"
-#include "server/zone/objects/scene/ObserverEventType.h"
+#include "templates/params/ObserverEventType.h"
 #include "server/zone/objects/scene/variables/DeltaVector.h"
 #include "server/zone/objects/scene/variables/StringId.h"
 #include "server/zone/objects/scene/WorldCoordinates.h"
 #include "server/zone/objects/tangible/threat/ThreatMap.h"
 #include "server/zone/objects/creature/ai/bt/CompositeBehavior.h"
-#include "server/zone/objects/creature/CreatureAttribute.h"
-#include "server/zone/objects/creature/CreatureFlag.h"
-#include "server/zone/objects/creature/CreaturePosture.h"
-#include "server/zone/objects/creature/CreatureState.h"
+#include "templates/params/creature/CreatureAttribute.h"
+#include "templates/params/creature/CreatureFlag.h"
+#include "templates/params/creature/CreaturePosture.h"
+#include "templates/params/creature/CreatureState.h"
 #include "server/zone/objects/creature/damageovertime/DamageOverTimeList.h"
 #include "server/zone/objects/creature/ai/events/AiAwarenessEvent.h"
 #include "server/zone/objects/creature/ai/events/AiMoveEvent.h"
@@ -168,6 +166,7 @@ void AiAgentImplementation::loadTemplateData(CreatureTemplate* templateData) {
 	float maxDmg = npcTemplate->getDamageMax();
 	float speed = calculateAttackSpeed(level);
 	bool allowedWeapon = true;
+
 	if (petDeed != NULL) {
 		minDmg = petDeed->getMinDamage();
 		maxDmg = petDeed->getMaxDamage();
@@ -175,8 +174,10 @@ void AiAgentImplementation::loadTemplateData(CreatureTemplate* templateData) {
 	}
 
 	Vector<WeaponObject*> weapons;
-	Vector<String> wepgroups = npcTemplate->getWeapons();
+
 	if (allowedWeapon) {
+		Vector<String> wepgroups = npcTemplate->getWeapons();
+
 		for (int i = 0; i < wepgroups.size(); ++i) {
 			Vector<String> weptemps = CreatureTemplateManager::instance()->getWeapons(wepgroups.get(i));
 
@@ -221,7 +222,7 @@ void AiAgentImplementation::loadTemplateData(CreatureTemplate* templateData) {
 
 		if (petDeed != NULL) {
 			defaultWeapon->setAttackSpeed(petDeed->getAttackSpeed());
-		} else if(isPet()){
+		} else if (isPet()) {
 			defaultWeapon->setAttackSpeed(speed);
 		}
 	}
@@ -254,6 +255,7 @@ void AiAgentImplementation::loadTemplateData(CreatureTemplate* templateData) {
 		baseHAM.add(mind/10);
 		baseHAM.add(mind/10);
 	}
+
 	hamList.removeAll();
 	for (int i = 0; i < 9; ++i) {
 		hamList.add(baseHAM.get(i));
@@ -264,15 +266,14 @@ void AiAgentImplementation::loadTemplateData(CreatureTemplate* templateData) {
 		maxHamList.add(baseHAM.get(i));
 	}
 
-
 	objectName = npcTemplate->getObjectName();
 
-	if(npcTemplate->getRandomNameType() != NameManagerType::TAG) {
+	if (npcTemplate->getRandomNameType() != NameManagerType::TAG) {
 		NameManager* nm = server->getNameManager();
 
 		int templSpecies = getSpecies();
 
-		if(!npcTemplate->getRandomNameTag()) {
+		if (!npcTemplate->getRandomNameTag()) {
 			setCustomObjectName(nm->makeCreatureName(npcTemplate->getRandomNameType(), templSpecies), false);
 		} else {
 			String newName = nm->makeCreatureName(npcTemplate->getRandomNameType(), templSpecies);
@@ -1127,7 +1128,7 @@ void AiAgentImplementation::runAway(CreatureObject* target, float range) {
 		runTrajectory = runTrajectory * (fleeRange / runTrajectory.length());
 		runTrajectory += getPosition();
 
-		setNextPosition(runTrajectory.getX(), getZone()->getHeight(runTrajectory.getX(), runTrajectory.getY()), runTrajectory.getY(), getParent().get());
+		setNextPosition(runTrajectory.getX(), getZone()->getHeight(runTrajectory.getX(), runTrajectory.getY()), runTrajectory.getY(), getParent().get().castTo<CellObject*>());
 	}
 }
 
@@ -1297,7 +1298,7 @@ void AiAgentImplementation::respawn(Zone* zone, int level) {
 
 	initializePosition(homeLocation.getPositionX(), homeLocation.getPositionZ(), homeLocation.getPositionY());
 
-	SceneObject* cell = homeLocation.getCell();
+	CellObject* cell = homeLocation.getCell();
 
 	setNextPosition(homeLocation.getPositionX(), homeLocation.getPositionZ(), homeLocation.getPositionY());
 	nextStepPosition.setPosition(homeLocation.getPositionX(), homeLocation.getPositionZ(), homeLocation.getPositionY());
@@ -1545,7 +1546,7 @@ void AiAgentImplementation::updateCurrentPosition(PatrolPoint* pos) {
 	setPosition(nextPosition->getPositionX(), nextPosition->getPositionZ(),
 			nextPosition->getPositionY());
 
-	SceneObject* cell = nextPosition->getCell();
+	CellObject* cell = nextPosition->getCell();
 
 	/*StringBuffer reachedPosition;
 	reachedPosition << "(" << positionX << ", " << positionY << ")";
@@ -1554,7 +1555,7 @@ void AiAgentImplementation::updateCurrentPosition(PatrolPoint* pos) {
 	if (getZone() == NULL)
 		return;
 
-	if (cell != NULL && cell->getParent() != NULL)
+	if (cell != NULL && cell->getParent().get() != NULL)
 		updateZoneWithParent(cell, false, false);
 	else
 		updateZone(false, false);
@@ -1635,7 +1636,7 @@ bool AiAgentImplementation::findNextPosition(float maxDistance, bool walk) {
 	while (!found && getPatrolPointSize() != 0) {
 		// the first position in patrolPoints is where we want to move to
 		PatrolPoint targetPosition = getNextPosition();
-		SceneObject* targetCoordinateCell = targetPosition.getCell();
+		CellObject* targetCoordinateCell = targetPosition.getCell();
 
 		/*
 		 * PRE-STEP: calculate z if we need to for our target location
@@ -1787,7 +1788,7 @@ bool AiAgentImplementation::findNextPosition(float maxDistance, bool walk) {
 				msg << "Next Position: path distance: " << nextPositionDebug.getWorldPosition().distanceTo(getWorldPosition()) << " maxDist:" << maxDist;
 				movementMarker->setCustomObjectName(msg.toString(), false);
 
-				CellObject* cellObject = dynamic_cast<CellObject*>(nextPositionDebug.getCell());
+				CellObject* cellObject = nextPositionDebug.getCell();
 
 				if (cellObject != NULL) {
 					cellObject->transferObject(movementMarker, -1, true);
@@ -1801,7 +1802,7 @@ bool AiAgentImplementation::findNextPosition(float maxDistance, bool walk) {
 
 				for (int i = 0; i < path->size(); ++i) {
 					WorldCoordinates* coord = &path->get(i);
-					SceneObject* coordCell = coord->getCell();
+					CellObject* coordCell = coord->getCell();
 
 					movementMarker = getZoneServer()->createObject(STRING_HASHCODE("object/path_waypoint/path_waypoint.iff"), 0);
 
@@ -1911,7 +1912,9 @@ float AiAgentImplementation::getWorldZ(const Vector3& position) {
 	} else {
 		SortedVector<ManagedReference<QuadTreeEntry*> > closeObjects;
 
+#ifdef COV_DEBUG
 		zone->info("Null closeobjects vector in AiAgentImplementation::getWorldZ", true);
+#endif
 
 		Vector3 worldPosition = getWorldPosition();
 		zone->getInRangeObjects(worldPosition.getX(), worldPosition.getY(), 128, &closeObjects, true);
@@ -1966,7 +1969,9 @@ bool AiAgentImplementation::generatePatrol(int num, float dist) {
 	if (closeobjects != NULL) {
 		closeobjects->safeCopyTo(closeObjects);
 	} else {
+#ifdef COV_DEBUG
 		zone->info("Null closeobjects vector in AiAgentImplementation::generatePatrol", true);
+#endif
 
 		Vector3 worldPosition = getWorldPosition();
 		zone->getInRangeObjects(worldPosition.getX(), worldPosition.getY(), 128, &closeObjects, true);
@@ -1980,7 +1985,7 @@ bool AiAgentImplementation::generatePatrol(int num, float dist) {
 
 		ManagedReference<SceneObject*> strongParent = getParent().get();
 		if (strongParent != NULL && strongParent->isCellObject()) {
-			newPoint.setCell(strongParent);
+			newPoint.setCell(strongParent.castTo<CellObject*>());
 		}
 
 		if (newPoint.getCell() == NULL && zone != NULL) {
@@ -2087,7 +2092,7 @@ int AiAgentImplementation::setDestination() {
 			return setDestination();
 		}
 
-		setNextPosition(getPositionX(), getPositionZ(), getPositionY(), getParent().get()); // sets patrolPoints[0] to current position
+		setNextPosition(getPositionX(), getPositionZ(), getPositionY(), getParent().get().castTo<CellObject*>()); // sets patrolPoints[0] to current position
 		checkNewAngle(); // sends update zone packet
 		if (getPatrolPointSize() > 0) {
 			PatrolPoint patrolPoint = getNextPosition();
@@ -2107,7 +2112,7 @@ int AiAgentImplementation::setDestination() {
 		}
 
 		clearPatrolPoints();
-		setNextPosition(followCopy->getPositionX(), followCopy->getPositionZ(), followCopy->getPositionY(), followCopy->getParent().get());
+		setNextPosition(followCopy->getPositionX(), followCopy->getPositionZ(), followCopy->getPositionY(), followCopy->getParent().get().castTo<CellObject*>());
 		break;
 	default:
 		setOblivious();
@@ -2140,7 +2145,9 @@ bool AiAgentImplementation::isScentMasked(CreatureObject* target) {
 	uint64 effectiveTargetID = effectiveTarget->getObjectID();
 
 	if (!effectiveTarget->hasBuff(STRING_HASHCODE("skill_buff_mask_scent_self"))) {
-		camouflagedObjects.removeElement(effectiveTargetID);
+		if (!effectiveTarget->hasBuff(STRING_HASHCODE("skill_buff_mask_scent"))) {
+			camouflagedObjects.removeElement(effectiveTargetID);
+		}
 		return false;
 	}
 
@@ -2196,7 +2203,9 @@ bool AiAgentImplementation::isConcealed(CreatureObject* target) {
 	uint64 effectiveTargetID = effectiveTarget->getObjectID();
 
 	if (!effectiveTarget->hasBuff(STRING_HASHCODE("skill_buff_mask_scent"))) {
-		camouflagedObjects.removeElement(effectiveTargetID);
+		if (!effectiveTarget->hasBuff(STRING_HASHCODE("skill_buff_mask_scent_self"))) {
+			camouflagedObjects.removeElement(effectiveTargetID);
+		}
 		return false;
 	}
 
@@ -2288,7 +2297,7 @@ void AiAgentImplementation::activateWaitEvent() {
 		waitEvent->schedule(UPDATEMOVEMENTINTERVAL * 10);
 }
 
-void AiAgentImplementation::setNextPosition(float x, float z, float y, SceneObject* cell) {
+void AiAgentImplementation::setNextPosition(float x, float z, float y, CellObject* cell) {
 	Locker locker(&targetMutex);
 
 	PatrolPoint point(x, z, y, cell);
@@ -2296,7 +2305,7 @@ void AiAgentImplementation::setNextPosition(float x, float z, float y, SceneObje
 	patrolPoints.add(0, point);
 }
 
-void AiAgentImplementation::setNextStepPosition(float x, float z, float y, SceneObject* cell) {
+void AiAgentImplementation::setNextStepPosition(float x, float z, float y, CellObject* cell) {
 	Locker locker(&targetMutex);
 
 	PatrolPoint point(x, z, y, cell);
@@ -2396,109 +2405,109 @@ void AiAgentImplementation::fillAttributeList(AttributeListMessage* alm, Creatur
 	else if (getArmor() == 3)
 		alm->insertAttribute("armorrating", "Heavy");
 
-	if (isSpecialProtection(WeaponObject::KINETIC)) {
+	if (isSpecialProtection(SharedWeaponObjectTemplate::KINETIC)) {
 		StringBuffer txt;
 		txt << Math::getPrecision(getKinetic(), 1) << "%";
 		alm->insertAttribute("cat_armor_special_protection.armor_eff_kinetic", txt.toString());
 	}
 
-	if (isSpecialProtection(WeaponObject::ENERGY)) {
+	if (isSpecialProtection(SharedWeaponObjectTemplate::ENERGY)) {
 		StringBuffer txt;
 		txt << Math::getPrecision(getEnergy(), 1) << "%";
 		alm->insertAttribute("cat_armor_special_protection.armor_eff_energy", txt.toString());
 	}
 
-	if (isSpecialProtection(WeaponObject::ELECTRICITY)) {
+	if (isSpecialProtection(SharedWeaponObjectTemplate::ELECTRICITY)) {
 		StringBuffer txt;
 		txt << Math::getPrecision(getElectricity(), 1) << "%";
 		alm->insertAttribute("cat_armor_special_protection.armor_eff_elemental_electrical", txt.toString());
 	}
 
-	if (isSpecialProtection(WeaponObject::STUN)) {
+	if (isSpecialProtection(SharedWeaponObjectTemplate::STUN)) {
 		StringBuffer txt;
 		txt << Math::getPrecision(getStun(), 1) << "%";
 		alm->insertAttribute("cat_armor_special_protection.armor_eff_stun", txt.toString());
 	}
 
-	if (isSpecialProtection(WeaponObject::BLAST)) {
+	if (isSpecialProtection(SharedWeaponObjectTemplate::BLAST)) {
 		StringBuffer txt;
 		txt << Math::getPrecision(getBlast(), 1) << "%";
 		alm->insertAttribute("cat_armor_special_protection.armor_eff_blast", txt.toString());
 	}
 
-	if (isSpecialProtection(WeaponObject::HEAT)) {
+	if (isSpecialProtection(SharedWeaponObjectTemplate::HEAT)) {
 		StringBuffer txt;
 		txt << Math::getPrecision(getHeat(), 1) << "%";
 		alm->insertAttribute("cat_armor_special_protection.armor_eff_elemental_heat", txt.toString());
 	}
 
-	if (isSpecialProtection(WeaponObject::COLD)) {
+	if (isSpecialProtection(SharedWeaponObjectTemplate::COLD)) {
 		StringBuffer txt;
 		txt << Math::getPrecision(getCold(), 1) << "%";
 		alm->insertAttribute("cat_armor_special_protection.armor_eff_elemental_cold", txt.toString());
 	}
 
-	if (isSpecialProtection(WeaponObject::ACID)) {
+	if (isSpecialProtection(SharedWeaponObjectTemplate::ACID)) {
 		StringBuffer txt;
 		txt << Math::getPrecision(getAcid(), 1) << "%";
 		alm->insertAttribute("cat_armor_special_protection.armor_eff_elemental_acid", txt.toString());
 	}
 
-	if (isSpecialProtection(WeaponObject::LIGHTSABER)) {
+	if (isSpecialProtection(SharedWeaponObjectTemplate::LIGHTSABER)) {
 		StringBuffer txt;
 		txt << Math::getPrecision(getLightSaber(), 1) << "%";
 		alm->insertAttribute("cat_armor_special_protection.armor_eff_restraint", txt.toString());
 	}
 
-	if (getKinetic() > 0 && !isSpecialProtection(WeaponObject::KINETIC)) {
+	if (getKinetic() > 0 && !isSpecialProtection(SharedWeaponObjectTemplate::KINETIC)) {
 		StringBuffer txt;
 		txt << Math::getPrecision(getKinetic(), 1) << "%";
 		alm->insertAttribute("cat_armor_effectiveness.armor_eff_kinetic", txt.toString());
 	}
 
-	if (getEnergy() > 0 && !isSpecialProtection(WeaponObject::ENERGY)) {
+	if (getEnergy() > 0 && !isSpecialProtection(SharedWeaponObjectTemplate::ENERGY)) {
 		StringBuffer txt;
 		txt << Math::getPrecision(getEnergy(), 1) << "%";
 		alm->insertAttribute("cat_armor_effectiveness.armor_eff_energy", txt.toString());
 	}
 
-	if (getElectricity() > 0 && !isSpecialProtection(WeaponObject::ELECTRICITY)) {
+	if (getElectricity() > 0 && !isSpecialProtection(SharedWeaponObjectTemplate::ELECTRICITY)) {
 		StringBuffer txt;
 		txt << Math::getPrecision(getElectricity(), 1) << "%";
 		alm->insertAttribute("cat_armor_effectiveness.armor_eff_elemental_electrical", txt.toString());
 	}
 
-	if (getStun() > 0 && !isSpecialProtection(WeaponObject::STUN)) {
+	if (getStun() > 0 && !isSpecialProtection(SharedWeaponObjectTemplate::STUN)) {
 		StringBuffer txt;
 		txt << Math::getPrecision(getStun(), 1) << "%";
 		alm->insertAttribute("cat_armor_effectiveness.armor_eff_stun", txt.toString());
 	}
 
-	if (getBlast() > 0 && !isSpecialProtection(WeaponObject::BLAST)) {
+	if (getBlast() > 0 && !isSpecialProtection(SharedWeaponObjectTemplate::BLAST)) {
 		StringBuffer txt;
 		txt << Math::getPrecision(getBlast(), 1) << "%";
 		alm->insertAttribute("cat_armor_effectiveness.armor_eff_blast", txt.toString());
 	}
 
-	if (getHeat() > 0 && !isSpecialProtection(WeaponObject::HEAT)) {
+	if (getHeat() > 0 && !isSpecialProtection(SharedWeaponObjectTemplate::HEAT)) {
 		StringBuffer txt;
 		txt << Math::getPrecision(getHeat(), 1) << "%";
 		alm->insertAttribute("cat_armor_effectiveness.armor_eff_elemental_heat", txt.toString());
 	}
 
-	if (getCold() > 0 && !isSpecialProtection(WeaponObject::COLD)) {
+	if (getCold() > 0 && !isSpecialProtection(SharedWeaponObjectTemplate::COLD)) {
 		StringBuffer txt;
 		txt << Math::getPrecision(getCold(), 1) << "%";
 		alm->insertAttribute("cat_armor_effectiveness.armor_eff_elemental_cold", txt.toString());
 	}
 
-	if (getAcid() > 0 && !isSpecialProtection(WeaponObject::ACID)) {
+	if (getAcid() > 0 && !isSpecialProtection(SharedWeaponObjectTemplate::ACID)) {
 		StringBuffer txt;
 		txt << Math::getPrecision(getAcid(), 1) << "%";
 		alm->insertAttribute("cat_armor_effectiveness.armor_eff_elemental_acid", txt.toString());
 	}
 
-	if (getLightSaber() > 0 && !isSpecialProtection(WeaponObject::LIGHTSABER)) {
+	if (getLightSaber() > 0 && !isSpecialProtection(SharedWeaponObjectTemplate::LIGHTSABER)) {
 		StringBuffer txt;
 		txt << Math::getPrecision(getLightSaber(), 1) << "%";
 		alm->insertAttribute("cat_armor_effectiveness.armor_eff_restraint", txt.toString());
@@ -2584,12 +2593,9 @@ bool AiAgentImplementation::sendConversationStartTo(SceneObject* player) {
 	//Face player.
 	faceObject(player);
 
-	PatrolPoint current(coordinates.getPosition(), getParent().get());
+	PatrolPoint current(coordinates.getPosition(), getParent().get().castTo<CellObject*>());
 
 	broadcastNextPositionUpdate(&current);
-
-	if (npcTemplate == NULL)
-		return false;
 
 	CreatureObject* playerCreature = cast<CreatureObject*>( player);
 
@@ -2954,7 +2960,9 @@ void AiAgentImplementation::broadcastInterrupt(int64 msg) {
 
 			try {
 				if (closeobjects == NULL) {
+#ifdef COV_DEBUG
 					aiAgent_p->info("Null closeobjects vector in AiAgentImplementation::broadcastInterrupt", true);
+#endif
 					zone->getInRangeObjects(aiAgent_p->getPositionX(), aiAgent_p->getPositionY(), ZoneServer::CLOSEOBJECTRANGE, &closeAiAgents, true);
 				} else {
 					closeAiAgents.removeAll(closeobjects->size(), 10);
@@ -3173,6 +3181,11 @@ bool AiAgentImplementation::isAttackableBy(CreatureObject* object) {
 		if (!targetSocialGroup.isEmpty() && targetSocialGroup != "self" && targetSocialGroup == getSocialGroup().toLowerCase()) {
 			return false;
 		}
+
+		uint32 targetLairTemplateCRC = ai->getLairTemplateCRC();
+		if (targetLairTemplateCRC != 0 && targetLairTemplateCRC == getLairTemplateCRC()) {
+			return false;
+		}
 	}
 
 	return true;
@@ -3216,23 +3229,23 @@ void AiAgentImplementation::setMaxHAM(int type, int value, bool notifyClient) {
 	}
 
 float AiAgentImplementation::getEffectiveResist() {
-	if (!isSpecialProtection(WeaponObject::ACID) && getAcid() > 0)
+	if (!isSpecialProtection(SharedWeaponObjectTemplate::ACID) && getAcid() > 0)
 		return getAcid();
-	if (!isSpecialProtection(WeaponObject::BLAST) && getBlast() > 0)
+	if (!isSpecialProtection(SharedWeaponObjectTemplate::BLAST) && getBlast() > 0)
 		return getBlast();
-	if (!isSpecialProtection(WeaponObject::COLD) && getCold() > 0)
+	if (!isSpecialProtection(SharedWeaponObjectTemplate::COLD) && getCold() > 0)
 		return getCold();
-	if (!isSpecialProtection(WeaponObject::ELECTRICITY) && getElectricity() > 0)
+	if (!isSpecialProtection(SharedWeaponObjectTemplate::ELECTRICITY) && getElectricity() > 0)
 		return getElectricity();
-	if (!isSpecialProtection(WeaponObject::ENERGY) && getEnergy() > 0)
+	if (!isSpecialProtection(SharedWeaponObjectTemplate::ENERGY) && getEnergy() > 0)
 		return getEnergy();
-	if (!isSpecialProtection(WeaponObject::HEAT) && getHeat() > 0)
+	if (!isSpecialProtection(SharedWeaponObjectTemplate::HEAT) && getHeat() > 0)
 		return getHeat();
-	if (!isSpecialProtection(WeaponObject::KINETIC) && getKinetic() > 0)
+	if (!isSpecialProtection(SharedWeaponObjectTemplate::KINETIC) && getKinetic() > 0)
 		return getKinetic();
-	if (!isSpecialProtection(WeaponObject::LIGHTSABER) && getLightSaber() > 0)
+	if (!isSpecialProtection(SharedWeaponObjectTemplate::LIGHTSABER) && getLightSaber() > 0)
 		return getLightSaber();
-	if (!isSpecialProtection(WeaponObject::STUN) && getStun() > 0)
+	if (!isSpecialProtection(SharedWeaponObjectTemplate::STUN) && getStun() > 0)
 		return getStun();
 	return 0;
 }

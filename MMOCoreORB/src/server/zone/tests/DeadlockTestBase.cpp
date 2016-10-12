@@ -47,6 +47,12 @@ public:
 	void TearDown() {
 		// Perform clean up of common constructs here.
 		CLEAR_LOCK_TRACE();
+
+		sceneObject1 = NULL;
+		sceneObject2 = NULL;
+		sceneObject3 = NULL;
+		sceneObject4 = NULL;
+		monitor = NULL;
 	}
 };
 
@@ -181,7 +187,7 @@ void DeadlockDetector::detectDeadlock() {
 			}
 
 			if (lastLockable != NULL) {
-				if (lastTrace->monitorLike)
+				if (lastTrace != NULL && lastTrace->monitorLike)
 					throw DeadlockException(lock->lockable, "Monitor trying to perform a lock!");
 
 				//ASSERT_FALSE(lastTrace->monitorLike) << "Monitor trying to perform a lock!";

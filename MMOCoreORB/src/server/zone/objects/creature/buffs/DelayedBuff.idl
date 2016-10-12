@@ -8,7 +8,6 @@ import engine.core.ManagedObject;
 import system.util.VectorMap;
 import system.lang.ref.Reference;
 import server.zone.objects.creature.CreatureObject;
-import server.zone.objects.creature.CreatureObject;
 import system.lang.Time;
 
 include server.zone.ZoneProcessServer;
@@ -28,7 +27,7 @@ class DelayedBuff extends Buff {
 	protected Vector<int> eventTypes;
 
 	public DelayedBuff(CreatureObject creo, unsigned int buffcrc, int effectCount) {
-		super(creo, buffcrc, 1380, BuffType.FOOD);
+		super(creo, buffcrc, 3600, BuffType.FOOD);
 
 		usesRemaining = effectCount;
 		player = creo;

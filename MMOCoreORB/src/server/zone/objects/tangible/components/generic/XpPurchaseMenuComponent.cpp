@@ -7,10 +7,10 @@
 #include "server/zone/objects/player/sui/messagebox/SuiMessageBox.h"
 #include "server/zone/objects/player/sui/callbacks/XpPurchaseSuiCallback.h"
 
-#include "server/zone/templates/tangible/XpPurchaseTemplate.h"
+#include "templates/tangible/XpPurchaseTemplate.h"
 #include "server/zone/managers/crafting/schematicmap/SchematicMap.h"
 
-void XpPurchaseMenuComponent::fillObjectMenuResponse(SceneObject* sceneObject, ObjectMenuResponse* menuResponse, CreatureObject* player) {
+void XpPurchaseMenuComponent::fillObjectMenuResponse(SceneObject* sceneObject, ObjectMenuResponse* menuResponse, CreatureObject* player) const {
 
 	if (!sceneObject->isTangibleObject())
 		return;
@@ -27,7 +27,7 @@ void XpPurchaseMenuComponent::fillObjectMenuResponse(SceneObject* sceneObject, O
 	menuResponse->addRadialMenuItem(50, 3, "@item/xp_purchase:menu_learn"); //Learn
 }
 
-int XpPurchaseMenuComponent::handleObjectMenuSelect(SceneObject* sceneObject, CreatureObject* player, byte selectedID) {
+int XpPurchaseMenuComponent::handleObjectMenuSelect(SceneObject* sceneObject, CreatureObject* player, byte selectedID) const {
 	if (!sceneObject->isTangibleObject())
 		return 0;
 

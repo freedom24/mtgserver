@@ -3,17 +3,16 @@
 		See file COPYING for copying conditions. */
 
 #include "ImageDesignManager.h"
-#include "server/zone/managers/player/PlayerManager.h"
-#include "server/zone/managers/customization/CustomizationIdManager.h"
+#include "templates/customization/CustomizationIdManager.h"
 #include "server/db/ServerDatabase.h"
 #include "server/zone/objects/scene/variables/CustomizationVariables.h"
 #include "server/zone/objects/tangible/TangibleObject.h"
 #include "server/zone/packets/creature/CreatureObjectDeltaMessage3.h"
 #include "server/zone/ZoneServer.h"
-#include "server/zone/managers/templates/TemplateManager.h"
-#include "server/zone/templates/tangible/PlayerCreatureTemplate.h"
-#include "server/zone/templates/customization/AssetCustomizationManagerTemplate.h"
-#include "server/zone/templates/customization/BasicRangedIntCustomizationVariable.h"
+#include "templates/manager/TemplateManager.h"
+#include "templates/creature/PlayerCreatureTemplate.h"
+#include "templates/customization/AssetCustomizationManagerTemplate.h"
+#include "templates/customization/BasicRangedIntCustomizationVariable.h"
 
 
 ImageDesignManager::ImageDesignManager() {
@@ -106,8 +105,8 @@ void ImageDesignManager::updateCustomization(CreatureObject* imageDesigner, cons
 					// ex: received value 0.5 is for i == 0 -> 0.0, i == 1 -> 0.0
 					// ex: received value 1 is for i == 0 -> 0.0, i == 1 -> 1.0
 
-					// pre: i Û [0, 1] && value Û [0, 1]
-					// post f Û [0, 1]
+					// pre: i ï¿½ [0, 1] && value ï¿½ [0, 1]
+					// post f ï¿½ [0, 1]
 					currentValue = MAX(0, ((value - 0.5) * 2) * (-1 + (i * 2)));
 				}
 
@@ -313,6 +312,10 @@ CustomizationData* ImageDesignManager::getCustomizationData(const String& specie
 	uint32 templateCRC = String::hashCode("object/creature/player/" + speciesGender + ".iff");
 
 	PlayerCreatureTemplate* tmpl = dynamic_cast<PlayerCreatureTemplate*>(templateManager->getTemplate(templateCRC));
+
+	if (tmpl == NULL)
+		return NULL;
+
 	CustomizationData* customization = tmpl->getCustomizationData(customizationName);
 
 	if (customization == NULL)
@@ -412,10 +415,16 @@ TangibleObject* ImageDesignManager::updateHairObject(CreatureObject* creo, Tangi
 	if (hairObject == NULL)
 		return NULL;
 
-	Locker locker(hairObject);
-
-	creo->transferObject(hairObject, 4);
-	creo->broadcastObject(hairObject, true);
+	// Some race condition in the client prevents both the destroy and transfer from happening too close together
+	// Without it placing a hair object in the inventory.
+	ManagedReference<CreatureObject*> strongCreo = creo;
+	ManagedReference<TangibleObject*> strongHair = hairObject;
+	Core::getTaskManager()->scheduleTask([strongCreo, strongHair]{
+		Locker locker(strongCreo);
+		Locker cLocker(strongCreo, strongHair);
+		strongCreo->transferObject(strongHair, 4);
+		strongCreo->broadcastObject(strongHair, true);
+	}, "TransferHairTask", 100);
 
 	return hair;
 }

@@ -8,7 +8,7 @@
 #ifndef SELECTCHARACTERCALLBACK_H_
 #define SELECTCHARACTERCALLBACK_H_
 
-#include "../MessageCallback.h"
+#include "server/zone/packets/MessageCallback.h"
 
 #include "server/zone/ZoneServer.h"
 #include "server/zone/Zone.h"
@@ -40,7 +40,7 @@ public:
 
 	void run() {
 		ZoneServer* zoneServer = server->getZoneServer();
-		
+
 		if (zoneServer->isServerLocked()) {
 			ErrorMessage* errMsg = new ErrorMessage("Login Error", "Server is currently locked", 0);
 			client->sendMessage(errMsg);
@@ -51,7 +51,14 @@ public:
 		if (zoneServer->isServerLoading()) {
 			ErrorMessage* errMsg = new ErrorMessage("Login Error", "Server is currently loading", 0);
 			client->sendMessage(errMsg);
-			
+
+			return;
+		}
+
+		if (zoneServer->isServerShuttingDown()) {
+			ErrorMessage* errMsg = new ErrorMessage("Login Error", "Server is shutting down", 0);
+			client->sendMessage(errMsg);
+
 			return;
 		}
 
@@ -63,14 +70,12 @@ public:
 			return;
 		}
 
-		//ObjectManager* objectManager = zoneServer->getObjectManager();
-
 		//Logger::console.info("selected char id: 0x" + String::hexvalueOf((int64)characterID), true);
 
 		ManagedReference<SceneObject*> obj = zoneServer->getObject(characterID, true);
 
 		if (obj != NULL && obj->isPlayerCreature()) {
-			CreatureObject* player = cast<CreatureObject*>( obj.get());
+			CreatureObject* player = obj->asCreatureObject();
 
 			Locker _locker(player);
 
@@ -96,7 +101,7 @@ public:
 
 			if (ghost->getAdminLevel() == 0 && (zoneServer->getConnectionCount() >= zoneServer->getServerCap())) {
 				client->sendMessage(new ErrorMessage("Login Error", "Server cap reached, please try again later", 0));
-				return;				
+				return;
 			}
 
 			if (!zoneServer->getPlayerManager()->increaseOnlineCharCountIfPossible(client)) {
@@ -107,7 +112,7 @@ public:
 			}
 
 			player->setClient(client);
-			client->setPlayer(obj);
+			client->setPlayer(player);
 
 			String zoneName = ghost->getSavedTerrainName();
 			Zone* zone = zoneServer->getZone(zoneName);
@@ -184,20 +189,6 @@ public:
 			ChatManager* chatManager = zoneServer->getChatManager();
 			chatManager->addPlayer(player);
 			chatManager->loadMail(player);
-
-			// Join auction chat room
-			ManagedReference<ChatRoom*> auctionChat = chatManager->getAuctionRoom();
-			if( auctionChat != NULL ){
-				auctionChat->sendTo(player);
-				auctionChat->addPlayer(player);
-			}
-
-			// Join General chat room
-			ManagedReference<ChatRoom*> generalChat = chatManager->getGeneralRoom();
-			if (generalChat != NULL) {
-				generalChat->sendTo(player);
-				generalChat->addPlayer(player);
-			}
 
 			ghost->notifyOnline();
 

@@ -12,14 +12,13 @@
 #include "server/zone/objects/scene/SceneObject.h"
 #include "server/zone/objects/creature/CreatureObject.h"
 #include "server/zone/objects/player/FactionStatus.h"
-#include "server/zone/objects/structure/StructureObject.h"
 
 #include "server/zone/objects/building/BuildingObject.h"
 
 #include "server/zone/managers/gcw/GCWManager.h"
 
 
-void OverrideTerminalMenuComponent::fillObjectMenuResponse(SceneObject* sceneObject, ObjectMenuResponse* menuResponse, CreatureObject* player) {
+void OverrideTerminalMenuComponent::fillObjectMenuResponse(SceneObject* sceneObject, ObjectMenuResponse* menuResponse, CreatureObject* player) const {
 
 	ManagedReference<BuildingObject*> building = cast<BuildingObject*>(sceneObject->getParentRecursively(SceneObjectType::FACTIONBUILDING).get().get());
 
@@ -42,11 +41,11 @@ void OverrideTerminalMenuComponent::fillObjectMenuResponse(SceneObject* sceneObj
 	if (!gcwMan->isBaseVulnerable(building))
 		return;
 
-	menuResponse->addRadialMenuItem(20, 3, "@hq:mnu_dna"); // Slice
+	menuResponse->addRadialMenuItem(20, 3, "@hq:mnu_dna"); // Provide DNA Profile
 
 }
 
-int OverrideTerminalMenuComponent::handleObjectMenuSelect(SceneObject* sceneObject, CreatureObject* player, byte selectedID) {
+int OverrideTerminalMenuComponent::handleObjectMenuSelect(SceneObject* sceneObject, CreatureObject* player, byte selectedID) const {
 	if (player->isDead() || player->isIncapacitated() || selectedID != 20)
 		return 1;
 

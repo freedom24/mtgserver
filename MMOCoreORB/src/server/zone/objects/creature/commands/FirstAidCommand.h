@@ -69,8 +69,6 @@ public:
 			return false;
 		}
 
-		PlayerManager* playerManager = server->getPlayerManager();
-
 		if (creature != creatureTarget && !CollisionManager::checkLineOfSight(creature, creatureTarget)) {
 			creature->sendSystemMessage("@container_error_message:container18");
 			return false;
@@ -110,7 +108,7 @@ public:
 		if ((creatureTarget->isAiAgent() && !creatureTarget->isPet()) || creatureTarget->isDroidObject() || creatureTarget->isDead() || creatureTarget->isRidingMount() || creatureTarget->isAttackableBy(creature))
 			creatureTarget = creature;
 
-		if (!creatureTarget->isInRange(creature, range + creatureTarget->getTemplateRadius() + creature->getTemplateRadius()))
+		if(!checkDistance(creature, creatureTarget, range))
 			return TOOFAR;
 
 		if (!creatureTarget->isHealableBy(creature)) {

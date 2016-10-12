@@ -11,8 +11,8 @@
 #include "server/zone/packets/mission/MissionObjectMessage3.h"
 #include "server/zone/packets/mission/MissionObjectDeltaMessage3.h"
 #include "server/zone/ZoneServer.h"
-#include "server/zone/managers/object/ObjectManager.h"
 #include "server/zone/objects/group/GroupObject.h"
+
 
 void MissionObjectImplementation::initializeTransientMembers() {
 	SceneObjectImplementation::initializeTransientMembers();
@@ -87,6 +87,12 @@ void MissionObjectImplementation::setMissionDescription(const String& file, cons
 
 void MissionObjectImplementation::setMissionTitle(const String& file, const String& id, bool notifyClient) {
 	missionTitle.setStringId(file, id);
+
+	Locker clocker(waypointToMission, _this.getReferenceUnsafeStaticCast());
+
+	waypointToMission->setCustomObjectName(missionTitle.getFullPath(), false);
+
+	clocker.release();
 
 	if (!notifyClient)
 		return;
@@ -168,6 +174,12 @@ void MissionObjectImplementation::setRewardCredits(int creds, bool notifyClient)
 
 		player->sendMessage(delta);
 	}
+}
+
+void MissionObjectImplementation::fillAttributeList(AttributeListMessage* alm, CreatureObject* object) {
+	SceneObjectImplementation::fillAttributeList(alm, object);
+
+	alm->insertAttribute("description", missionDescription.getFullPath());
 }
 
 SharedObjectTemplate* MissionObjectImplementation::getTargetTemplate() {

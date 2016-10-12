@@ -14,7 +14,7 @@
 #include "server/zone/objects/tangible/fishing/FishingBaitObject.h"
 #include "server/zone/objects/tangible/fishing/FishObject.h"
 #include "server/zone/objects/resource/ResourceContainer.h"
-#include "server/zone/managers/terrain/TerrainManager.h"
+#include "terrain/manager/TerrainManager.h"
 #include "server/zone/managers/resource/ResourceManager.h"
 #include "server/zone/Zone.h"
 #include "server/zone/managers/planet/PlanetManager.h"
@@ -960,7 +960,7 @@ bool FishingManagerImplementation::loseBait(CreatureObject* player) {
 				Locker fishBaitLocker(fishBait);
 
 				if (fishBait->getUseCount() > 1){
-					fishBait->setUseCount(fishBait->getUseCount() - 1, true);
+					fishBait->decreaseUseCount();
 					fishBait->setFreshness(FRESH);
 				}
 				else {
@@ -1297,7 +1297,8 @@ bool FishingManagerImplementation::isPlaying(CreatureObject* player) {
 int FishingManagerImplementation::notifyCloseContainer(CreatureObject* player, SceneObject* container) {
 	removeMarker(player, container);
 
-	player->dropActiveSession(SessionFacadeType::FISHING);
+	if (player != NULL)
+		player->dropActiveSession(SessionFacadeType::FISHING);
 
 	return 1;
 }

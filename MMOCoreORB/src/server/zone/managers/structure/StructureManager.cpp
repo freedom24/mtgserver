@@ -7,12 +7,13 @@
 
 #include "StructureManager.h"
 #include "server/zone/objects/scene/SceneObject.h"
-#include "server/conf/ConfigManager.h"
+#include "conf/ConfigManager.h"
 #include "server/zone/objects/creature/CreatureObject.h"
 #include "server/zone/managers/planet/PlanetManager.h"
 #include "server/zone/managers/gcw/GCWManager.h"
-#include "server/zone/templates/tangible/SharedStructureObjectTemplate.h"
-#include "server/zone/templates/tangible/SharedBuildingObjectTemplate.h"
+#include "server/zone/managers/object/ObjectManager.h"
+#include "templates/tangible/SharedStructureObjectTemplate.h"
+#include "templates/building/SharedBuildingObjectTemplate.h"
 #include "server/zone/ZoneServer.h"
 #include "server/zone/objects/area/ActiveArea.h"
 #include "server/zone/objects/tangible/deed/structure/StructureDeed.h"
@@ -21,7 +22,7 @@
 #include "server/zone/objects/player/PlayerObject.h"
 #include "server/zone/objects/player/sessions/PlaceStructureSession.h"
 #include "server/zone/objects/player/sessions/DestroyStructureSession.h"
-#include "server/zone/managers/terrain/TerrainManager.h"
+#include "terrain/manager/TerrainManager.h"
 #include "server/zone/objects/cell/CellObject.h"
 #include "server/zone/objects/building/BuildingObject.h"
 #include "server/zone/objects/region/CityRegion.h"
@@ -39,11 +40,11 @@
 #include "server/zone/objects/player/sui/callbacks/StructureWithdrawMaintenanceSuiCallback.h"
 #include "server/zone/objects/player/sui/callbacks/StructureSelectSignSuiCallback.h"
 #include "server/zone/managers/stringid/StringIdManager.h"
-#include "server/zone/objects/terrain/layer/boundaries/BoundaryRectangle.h"
-#include "server/zone/managers/gcw/GCWManager.h"
+#include "terrain/layer/boundaries/BoundaryRectangle.h"
 #include "tasks/DestroyStructureTask.h"
 #include "server/zone/objects/intangible/PetControlDevice.h"
 #include "server/zone/managers/creature/PetManager.h"
+#include "server/zone/objects/installation/harvester/HarvesterObject.h"
 
 void StructureManager::loadPlayerStructures(const String& zoneName) {
 
@@ -93,7 +94,7 @@ void StructureManager::loadPlayerStructures(const String& zoneName) {
 						GCWManager* gcwMan = zone->getGCWManager();
 
 						if (gcwMan != NULL) {
-							gcwMan->registerGCWBase(cast<BuildingObject*>(object.get()),false);
+							gcwMan->registerGCWBase(cast<BuildingObject*>(object.get()), false);
 						}
 					}
 				}
@@ -116,72 +117,72 @@ void StructureManager::loadPlayerStructures(const String& zoneName) {
 	info(String::valueOf(i) + " player structures loaded for " + zoneName + ".", log);
 }
 
-int StructureManager::getStructureFootprint(SharedObjectTemplate* objectTemplate, int angle, float& l0, float& w0, float& l1, float& w1) {
-	SharedStructureObjectTemplate* serverTemplate = dynamic_cast<SharedStructureObjectTemplate*>(objectTemplate);
-
-	if (serverTemplate == NULL)
+int StructureManager::getStructureFootprint(SharedStructureObjectTemplate* objectTemplate, int angle, float& l0, float& w0, float& l1, float& w1) {
+	if (objectTemplate == NULL)
 		return 1;
 
-	StructureFootprint* structureFootprint = serverTemplate->getStructureFootprint();
+	StructureFootprint* structureFootprint = objectTemplate->getStructureFootprint();
+
+	if (structureFootprint == NULL)
+		return 1;
+
 	//float l = 5; //Along the x axis.
 	//float w = 5; //Along the y axis.
 
-	if (structureFootprint != NULL) {
-		//if (structureFootprint->getRowSize() > structureFootprint->getColSize())
-		//	angle = angle + 180;
+	//if (structureFootprint->getRowSize() > structureFootprint->getColSize())
+	//	angle = angle + 180;
 
-		float centerX = (structureFootprint->getCenterX() * 8) + 4;
-		float centerY = (structureFootprint->getCenterY() * 8) + 4;
+	float centerX = (structureFootprint->getCenterX() * 8) + 4;
+	float centerY = (structureFootprint->getCenterY() * 8) + 4;
 
-		//info ("centerX:" + String::valueOf(centerX) + " centerY:" + String::valueOf(centerY), true);
+	//info ("centerX:" + String::valueOf(centerX) + " centerY:" + String::valueOf(centerY), true);
 
-		float topLeftX = -centerX;
-		float topLeftY = (structureFootprint->getRowSize() * 8 ) - centerY;
+	float topLeftX = -centerX;
+	float topLeftY = (structureFootprint->getRowSize() * 8 ) - centerY;
 
-		float bottomRightX = (8 * structureFootprint->getColSize() - centerX);
-		float bottomRightY = -centerY;
+	float bottomRightX = (8 * structureFootprint->getColSize() - centerX);
+	float bottomRightY = -centerY;
 
-		w0 = MIN(topLeftX, bottomRightX);
-		l0 = MIN(topLeftY, bottomRightY);
+	w0 = MIN(topLeftX, bottomRightX);
+	l0 = MIN(topLeftY, bottomRightY);
 
-		w1 = MAX(topLeftX, bottomRightX);
-		l1 = MAX(topLeftY, bottomRightY);
+	w1 = MAX(topLeftX, bottomRightX);
+	l1 = MAX(topLeftY, bottomRightY);
 
-		Matrix4 translationMatrix;
-		translationMatrix.setTranslation(0, 0, 0);
+	Matrix4 translationMatrix;
+	translationMatrix.setTranslation(0, 0, 0);
 
-		float rad = (float)(angle) * Math::DEG2RAD;
+	float rad = (float)(angle) * Math::DEG2RAD;
 
-		float cosRad = cos(rad);
-		float sinRad = sin(rad);
+	float cosRad = cos(rad);
+	float sinRad = sin(rad);
 
-		Matrix3 rot;
-		rot[0][0] = cosRad;
-		rot[0][2] = -sinRad;
-		rot[1][1] = 1;
-		rot[2][0] = sinRad;
-		rot[2][2] = cosRad;
+	Matrix3 rot;
+	rot[0][0] = cosRad;
+	rot[0][2] = -sinRad;
+	rot[1][1] = 1;
+	rot[2][0] = sinRad;
+	rot[2][2] = cosRad;
 
-		Matrix4 rotateMatrix;
-		rotateMatrix.setRotationMatrix(rot);
+	Matrix4 rotateMatrix;
+	rotateMatrix.setRotationMatrix(rot);
 
-		Matrix4 moveAndRotate = (translationMatrix * rotateMatrix);
+	Matrix4 moveAndRotate = (translationMatrix * rotateMatrix);
 
-		Vector3 pointBottom(w0, 0, l0);
-		Vector3 pointTop(w1, 0, l1);
+	Vector3 pointBottom(w0, 0, l0);
+	Vector3 pointTop(w1, 0, l1);
 
-		Vector3 resultBottom = pointBottom * moveAndRotate;
-		Vector3 resultTop = pointTop * moveAndRotate;
+	Vector3 resultBottom = pointBottom * moveAndRotate;
+	Vector3 resultTop = pointTop * moveAndRotate;
 
-		w0 = MIN(resultBottom.getX(), resultTop.getX());
-		l0 = MIN(resultBottom.getZ(), resultTop.getZ());
+	w0 = MIN(resultBottom.getX(), resultTop.getX());
+	l0 = MIN(resultBottom.getZ(), resultTop.getZ());
 
-		w1 = MAX(resultTop.getX(), resultBottom.getX());
-		l1 = MAX(resultTop.getZ(), resultBottom.getZ());
+	w1 = MAX(resultTop.getX(), resultBottom.getX());
+	l1 = MAX(resultTop.getZ(), resultBottom.getZ());
 
-		//info("objectTemplate:" + objectTemplate->getFullTemplateString() + " :" + structureFootprint->toString(), true);
-		//info("angle:" + String::valueOf(angle) + " w0:" + String::valueOf(w0) + " l0:" + String::valueOf(l0) + " w1:" + String::valueOf(w1) + " l1:" + String::valueOf(l1), true);
-	}
+	//info("objectTemplate:" + objectTemplate->getFullTemplateString() + " :" + structureFootprint->toString(), true);
+	//info("angle:" + String::valueOf(angle) + " w0:" + String::valueOf(w0) + " l0:" + String::valueOf(l0) + " w1:" + String::valueOf(w1) + " l1:" + String::valueOf(l1), true);
 
 	return 0;
 }
@@ -236,7 +237,7 @@ int StructureManager::placeStructureFromDeed(CreatureObject* creature, Structure
 	SortedVector<ManagedReference<QuadTreeEntry*> > inRangeObjects;
 	zone->getInRangeObjects(x, y, 128, &inRangeObjects, true);
 
-	float placingFootprintLength0, placingFootprintWidth0, placingFootprintLength1, placingFootprintWidth1;
+	float placingFootprintLength0 = 0, placingFootprintWidth0 = 0, placingFootprintLength1 = 0, placingFootprintWidth1 = 0;
 
 	if (!getStructureFootprint(serverTemplate, angle, placingFootprintLength0, placingFootprintWidth0, placingFootprintLength1, placingFootprintWidth1)) {
 		float x0 = x + placingFootprintWidth0;
@@ -260,7 +261,7 @@ int StructureManager::placeStructureFromDeed(CreatureObject* creature, Structure
 			float l1 = 5;
 			float w1 = 5;
 
-			if (getStructureFootprint(scene->getObjectTemplate(), scene->getDirectionAngle(), l0, w0, l1, w1))
+			if (getStructureFootprint(dynamic_cast<SharedStructureObjectTemplate*>(scene->getObjectTemplate()), scene->getDirectionAngle(), l0, w0, l1, w1))
 				continue;
 
 			float xx0 = scene->getPositionX() + (w0 + 0.1);
@@ -339,8 +340,6 @@ int StructureManager::placeStructureFromDeed(CreatureObject* creature, Structure
 		creature->sendSystemMessage("@player_structure:no_possession"); //You no longer are in possession of the deed for this structure. Aborting construction.
 		return 1;
 	}
-
-	TemplateManager* templateManager = TemplateManager::instance();
 
 	ManagedReference<PlayerObject*> ghost = creature->getPlayerObject();
 
@@ -718,12 +717,47 @@ int StructureManager::redeedStructure(CreatureObject* creature) {
 		ManagedReference<SceneObject*> inventory = creature->getSlottedObject(
 				"inventory");
 
-		if (inventory == NULL || inventory->isContainerFullRecursive()) {
-			creature->sendSystemMessage("@player_structure:inventory_full"); //This installation can not be redeeded because your inventory does not have room to put the deed.
-			creature->sendSystemMessage(
-					"@player_structure:deed_reclaimed_failed"); //Structure destroy and deed reclaimed FAILED!
+		bool isSelfPoweredHarvester = false;
+		HarvesterObject* harvester = structureObject.castTo<HarvesterObject*>();
+
+		if(harvester != NULL)
+			isSelfPoweredHarvester = harvester->isSelfPowered();
+
+		if (inventory == NULL || inventory->getCountableObjectsRecursive() > (inventory->getContainerVolumeLimit() - (isSelfPoweredHarvester ? 2 : 1))) {
+
+			if(isSelfPoweredHarvester) {
+				//This installation can not be destroyed because there is no room for the Self Powered Harvester Kit in your inventory.
+				creature->sendSystemMessage("@player_structure:inventory_full_selfpowered");
+			} else {
+				//This installation can not be redeeded because your inventory does not have room to put the deed.
+				creature->sendSystemMessage("@player_structure:inventory_full");
+			}
+
+			creature->sendSystemMessage("@player_structure:deed_reclaimed_failed"); //Structure destroy and deed reclaimed FAILED!
 			return session->cancelSession();
 		} else {
+
+			if(isSelfPoweredHarvester) {
+
+				Reference<SceneObject*> rewardSceno = server->createObject(STRING_HASHCODE("object/tangible/veteran_reward/harvester.iff"), 1);
+				if( rewardSceno == NULL ){
+					creature->sendSystemMessage("@player_structure:deed_reclaimed_failed"); //Structure destroy and deed reclaimed FAILED!
+					return session->cancelSession();
+				}
+
+				// Transfer to player
+				if( !inventory->transferObject(rewardSceno, -1, false, true) ){ // Allow overflow
+					creature->sendSystemMessage("@player_structure:deed_reclaimed_failed"); //Structure destroy and deed reclaimed FAILED!
+					rewardSceno->destroyObjectFromDatabase(true);
+					return session->cancelSession();
+				}
+
+				harvester->setSelfPowered(false);
+
+				inventory->broadcastObject(rewardSceno, true);
+				creature->sendSystemMessage("@player_structure:selfpowered");
+			}
+
 			deed->setSurplusMaintenance(maint - redeedCost);
 			deed->setSurplusPower(structureObject->getSurplusPower());
 
@@ -873,8 +907,7 @@ void StructureManager::reportStructureStatus(CreatureObject* creature,
 			"@player_structure:condition_prompt "
 					+ String::valueOf(structure->getDecayPercentage()) + "%");
 
-	if (!structure->isCivicStructure()) {
-
+	if (!structure->isCivicStructure() && !structure->isGCWBase()) {
 		// property tax
 		float propertytax = 0.f;
 		if(!structure->isCivicStructure() && structure->getCityRegion() != NULL){
@@ -911,7 +944,6 @@ void StructureManager::reportStructureStatus(CreatureObject* creature,
 					+ structure->getMaintenanceMods());
 	}
 
-
 	if (structure->isInstallationObject() && !structure->isGeneratorObject() && !structure->isCivicStructure()) {
 		InstallationObject* installation = cast<InstallationObject*>(structure);
 
@@ -937,8 +969,7 @@ void StructureManager::reportStructureStatus(CreatureObject* creature,
 	if (structure->isBuildingObject()) {
 		BuildingObject* building = cast<BuildingObject*>(structure);
 
-		if (building->isGCWBase() && (building->getPvpStatusBitmask() & CreatureFlag::OVERT) &&
-				(building->getOwnerCreatureObject() == creature || creature->getFactionRank() >= 9)) {
+		if (building->isGCWBase()) {
 			Zone* zone = creature->getZone();
 
 			if (zone != NULL) {
@@ -1001,7 +1032,7 @@ void StructureManager::promptMaintenanceDroid(StructureObject* structure, Creatu
 
 			if (device->getPetType() == PetManager::DROIDPET) {
 				DroidObject* pet = cast<DroidObject*>(device->getControlledObject());
-				if (pet->isMaintenanceDroid()) {
+				if (pet != NULL && pet->isMaintenanceDroid()) {
 					droids.add(pet);
 				}
 			}
@@ -1039,7 +1070,7 @@ void StructureManager::promptPayUncondemnMaintenance(CreatureObject* creature,
 
 	int uncondemnCost = -structure->getSurplusMaintenance();
 
-	ManagedReference<SuiMessageBox*> sui;
+	ManagedReference<SuiMessageBox*> sui = NULL;
 	String text;
 
 	if (creature->getCashCredits() + creature->getBankCredits()
@@ -1329,7 +1360,7 @@ bool StructureManager::isInStructureFootprint(StructureObject* structure, float 
 	Reference<SharedStructureObjectTemplate*> serverTemplate =
 				dynamic_cast<SharedStructureObjectTemplate*>(structure->getObjectTemplate());
 
-	float placingFootprintLength0, placingFootprintWidth0, placingFootprintLength1, placingFootprintWidth1;
+	float placingFootprintLength0 = 0, placingFootprintWidth0 = 0, placingFootprintLength1 = 0, placingFootprintWidth1 = 0;
 
 	if (getStructureFootprint(serverTemplate, structure->getDirectionAngle(), placingFootprintLength0, placingFootprintWidth0, placingFootprintLength1, placingFootprintWidth1) != 0)
 		return false;

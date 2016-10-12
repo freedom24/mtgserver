@@ -9,8 +9,8 @@
 #include "engine/engine.h"
 
 #include "server/zone/objects/creature/CreatureObject.h"
-#include "server/zone/objects/creature/CreaturePosture.h"
-#include "server/zone/objects/creature/CreatureLocomotion.h"
+#include "templates/params/creature/CreaturePosture.h"
+#include "templates/params/creature/CreatureLocomotion.h"
 
 
 #include "server/zone/ZoneProcessServer.h"
@@ -117,6 +117,10 @@ public:
 	 */
 	void addInvalidLocomotion(int l) {
 		invalidLocomotion.add(l);
+	}
+
+	inline bool checkDistance(SceneObject* source, SceneObject* target, float range) const {
+		return (source->getWorldPosition().distanceTo(target->getWorldPosition()) - source->getTemplateRadius() - target->getTemplateRadius() <= range);
 	}
 
 	/*

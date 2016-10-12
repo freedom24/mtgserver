@@ -1,5 +1,5 @@
 pirate_squab = Creature:new {
-	objectName = "",
+	objectName = "@mob/creature_names:pirate",
 	randomNameType = NAME_GENERIC,
 	randomNameTag = true,
 	customName = "a Pirate Squab",
@@ -25,7 +25,7 @@ pirate_squab = Creature:new {
 	ferocity = 0,
 	pvpBitmask = ATTACKABLE,
 	creatureBitmask = PACK + STALKER,
-	optionsBitmask = 128,
+	optionsBitmask = AIENABLED,
 	diet = HERBIVORE,
 
 	templates = {

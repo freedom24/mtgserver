@@ -11,6 +11,7 @@
 #include "server/zone/managers/crafting/schematicmap/SchematicMap.h"
 #include "server/zone/objects/tangible/deed/eventperk/EventPerkDeed.h"
 #include "server/zone/objects/tangible/eventperk/Jukebox.h"
+#include "server/zone/objects/tangible/eventperk/ShuttleBeacon.h"
 #include "server/zone/managers/skill/SkillManager.h"
 
 const char LuaPlayerObject::className[] = "LuaPlayerObject";
@@ -25,9 +26,12 @@ Luna<LuaPlayerObject>::RegType LuaPlayerObject::Register[] = {
 		{ "isCovert", &LuaPlayerObject::isCovert },
 		{ "increaseFactionStanding", &LuaPlayerObject::increaseFactionStanding },
 		{ "decreaseFactionStanding", &LuaPlayerObject::decreaseFactionStanding },
+		{ "setFactionStanding", &LuaPlayerObject::setFactionStanding },
 		{ "addWaypoint", &LuaPlayerObject::addWaypoint },
 		{ "removeWaypoint", &LuaPlayerObject::removeWaypoint },
 		{ "removeWaypointBySpecialType", &LuaPlayerObject::removeWaypointBySpecialType },
+		{ "getWaypointAt", &LuaPlayerObject::getWaypointAt },
+		{ "updateWaypoint", &LuaPlayerObject::updateWaypoint },
 		{ "addRewardedSchematic", &LuaPlayerObject::addRewardedSchematic },
 		{ "removeRewardedSchematic", &LuaPlayerObject::removeRewardedSchematic },
 		{ "hasSchematic", &LuaPlayerObject::hasSchematic },
@@ -57,8 +61,10 @@ Luna<LuaPlayerObject>::RegType LuaPlayerObject::Register[] = {
 		{ "getExperience", &LuaPlayerObject::getExperience },
 		{ "addEventPerk", &LuaPlayerObject::addEventPerk},
 		{ "getEventPerkCount", &LuaPlayerObject::getEventPerkCount},
+		{ "hasEventPerk", &LuaPlayerObject::hasEventPerk},
 		{ "getCharacterAgeInDays", &LuaPlayerObject::getCharacterAgeInDays},
 		{ "hasGodMode", &LuaPlayerObject::hasGodMode},
+		{ "isPrivileged", &LuaPlayerObject::isPrivileged},
 		{ "closeSuiWindowType", &LuaPlayerObject::closeSuiWindowType},
 		{ "getExperienceList", &LuaPlayerObject::getExperienceList},
 		{ "getExperienceCap", &LuaPlayerObject::getExperienceCap},
@@ -66,6 +72,7 @@ Luna<LuaPlayerObject>::RegType LuaPlayerObject::Register[] = {
 		{ "canActivateQuest", &LuaPlayerObject::canActivateQuest },
 		{ "getSuiBox", &LuaPlayerObject::getSuiBox },
 		{ "addSuiBox", &LuaPlayerObject::addSuiBox },
+		{ "removeSuiBox", &LuaPlayerObject::removeSuiBox },
 		{ 0, 0 }
 };
 
@@ -155,6 +162,15 @@ int LuaPlayerObject::decreaseFactionStanding(lua_State* L) {
 	return 0;
 }
 
+int LuaPlayerObject::setFactionStanding(lua_State* L) {
+	float val = lua_tonumber(L, -1);
+	const char* str = lua_tostring(L, -2);
+
+	realObject->setFactionStanding(str, val);
+
+	return 0;
+}
+
 //addWaypoint(planet, name, desc, x, y, color, active, notifyClient, specialTypeID, persistence = 1)
 int LuaPlayerObject::addWaypoint(lua_State* L) {
 	int numberOfArguments = lua_gettop(L) - 1;
@@ -221,6 +237,29 @@ int LuaPlayerObject::removeWaypointBySpecialType(lua_State* L) {
 	int specialTypeID = lua_tointeger(L, -1);
 
 	realObject->removeWaypointBySpecialType(specialTypeID);
+
+	return 0;
+}
+
+int LuaPlayerObject::getWaypointAt(lua_State* L) {
+	float x = lua_tonumber(L, -3);
+	float y = lua_tonumber(L, -2);
+	String planet = lua_tostring(L, -1);
+
+	WaypointObject* waypoint = realObject->getWaypointAt(x, y, planet);
+
+	if (waypoint != NULL)
+		lua_pushlightuserdata(L, waypoint);
+	else
+		lua_pushnil(L);
+
+	return 1;
+}
+
+int LuaPlayerObject::updateWaypoint(lua_State* L) {
+	unsigned long long int waypointID = lua_tointeger(L, -1);
+
+	realObject->updateWaypoint(waypointID);
 
 	return 0;
 }
@@ -314,11 +353,11 @@ int LuaPlayerObject::getHologrindProfessions(lua_State* L) {
 	Vector<byte>* professions = realObject->getHologrindProfessions();
 
 	lua_newtable(L);
+
 	for (int i = 0; i < professions->size(); i++) {
 		lua_pushnumber(L, professions->get(i));
-	}
-	for (int i = professions->size(); i > 0; i--) {
-		lua_rawseti(L, -i - 1, i);
+
+		lua_rawseti(L, -2, i + 1);
 	}
 
 	return 1;
@@ -480,6 +519,14 @@ int LuaPlayerObject::getEventPerkCount(lua_State* L) {
 	return 1;
 }
 
+int LuaPlayerObject::hasEventPerk(lua_State* L) {
+	String templateString = lua_tostring(L, -1);
+
+	lua_pushboolean(L, realObject->hasEventPerk(templateString));
+
+	return 1;
+}
+
 int LuaPlayerObject::addEventPerk(lua_State* L) {
 	SceneObject* item = (SceneObject*) lua_touserdata(L, -1);
 
@@ -491,13 +538,22 @@ int LuaPlayerObject::addEventPerk(lua_State* L) {
 
 	ManagedReference<CreatureObject*> creature = dynamic_cast<CreatureObject*>(realObject->getParent().get().get());
 
-	if (item->isEventPerkDeed() && creature != NULL) {
-		EventPerkDeed* deed = cast<EventPerkDeed*>(item);
-		deed->setOwner(creature);
-	} else if (item->isEventPerkItem() && creature != NULL) {
-		if (item->getServerObjectCRC() == 0x46BD798B) { // Jukebox
-			Jukebox* jbox = cast<Jukebox*>(item);
-			jbox->setOwner(creature);
+	if (creature != NULL) {
+		if (item->isEventPerkDeed()) {
+			EventPerkDeed* deed = cast<EventPerkDeed*>(item);
+			deed->setOwner(creature);
+		} else if (item->isEventPerkItem()) {
+			if (item->getServerObjectCRC() == 0x46BD798B) { // Jukebox
+				Jukebox* jbox = cast<Jukebox*>(item);
+
+				if (jbox != NULL)
+					jbox->setOwner(creature);
+			} else if (item->getServerObjectCRC() == 0x255F612C) { // Shuttle Beacon
+				ShuttleBeacon* beacon = cast<ShuttleBeacon*>(item);
+
+				if (beacon != NULL)
+					beacon->setOwner(creature);
+			}
 		}
 	}
 
@@ -518,6 +574,12 @@ int LuaPlayerObject::hasGodMode(lua_State* L) {
 	return 1;
 }
 
+int LuaPlayerObject::isPrivileged(lua_State* L) {
+	lua_pushboolean(L, realObject->isPrivileged());
+
+	return 1;
+}
+
 int LuaPlayerObject::closeSuiWindowType(lua_State* L) {
 	int type = lua_tointeger(L, -1);
 	unsigned suiType = (unsigned)type;
@@ -531,11 +593,12 @@ int LuaPlayerObject::getExperienceList(lua_State* L) {
 	DeltaVectorMap<String, int>* expList = realObject->getExperienceList();
 
 	lua_newtable(L);
+
 	for (int i = 0; i < expList->size(); i++) {
-		lua_pushstring(L, expList->getKeyAt(i).toCharArray());
-	}
-	for (int i = expList->size(); i > 0; i--) {
-		lua_rawseti(L, -i - 1, i);
+		const auto& value = expList->getKeyAt(i);
+
+		lua_pushstring(L, value.toCharArray());
+		lua_rawseti(L, -2, i + 1);
 	}
 
 	return 1;
@@ -571,4 +634,11 @@ int LuaPlayerObject::addSuiBox(lua_State* L) {
 	realObject->addSuiBox(box);
 
 	return 0;
+}
+
+int LuaPlayerObject::removeSuiBox(lua_State* L) {
+	uint32 pageId = lua_tointeger(L, -1);
+	realObject->removeSuiBox(pageId, true);
+
+	return 1;
 }

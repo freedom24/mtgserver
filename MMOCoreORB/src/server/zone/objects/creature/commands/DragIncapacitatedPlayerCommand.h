@@ -8,6 +8,7 @@
 #include "server/zone/objects/scene/SceneObject.h"
 
 #include "server/zone/managers/collision/CollisionManager.h"
+#include "server/zone/managers/collision/PathFinderManager.h"
 
 class DragIncapacitatedPlayerCommand : public QueueCommand {
 	float maxRange, maxMovement;
@@ -16,15 +17,15 @@ public:
 
 	DragIncapacitatedPlayerCommand(const String& name, ZoneProcessServer* server)
 		: QueueCommand(name, server) {
-		
+
 		maxRange = 31.0;
 		maxMovement = 5.0;
 		needsConsent = true;
 	}
 
 	void getCoordinate(SceneObject* object1, SceneObject* object2, float distanceFromObject1, WorldCoordinates* newPosition) const {
-		ManagedReference<SceneObject*> object1Cell = object1->getParent().get();
-		ManagedReference<SceneObject*> object2Cell = object2->getParent().get();
+		ManagedReference<CellObject*> object1Cell = object1->getParent().get().castTo<CellObject*>();
+		ManagedReference<CellObject*> object2Cell = object2->getParent().get().castTo<CellObject*>();
 		Vector3 object1Position = object1->getPosition();
 		Vector3 object2Position = object2->getPosition();
 
@@ -79,17 +80,18 @@ public:
 			player->sendSystemMessage("@healing_response:healing_response_a5"); //"You must first have a valid target to drag before you can perform this command."
 			return;
 		}
+		float sqDistance = targetPlayer->getWorldPosition().squaredDistanceTo(player->getWorldPosition());
 
 		//Check minimum range.
-		if (player->isInRange(targetPlayer, 0.01f)) {
+		if (sqDistance < 0.01f*0.01f) {
 			return;
 		}
 
 		//Check maximum range.
-		if (!player->isInRange(targetPlayer, maxRange)) {
+		if (sqDistance > maxRange*maxRange) {
 			StringIdChatParameter stringId("healing_response", "healing_response_b1"); //"Your maximum drag range is %DI meters! Try getting closer."
 			stringId.setDI(maxRange);
-			player->sendSystemMessage(stringId); 
+			player->sendSystemMessage(stringId);
 			return;
 		}
 
@@ -147,7 +149,7 @@ public:
 		getCoordinate(targetPlayer, player, maxMovement, &newPosition);
 		targetPlayer->setPosition(newPosition.getX(), newPosition.getZ(), newPosition.getY());
 		targetPlayer->incrementMovementCounter();
-		ManagedReference<SceneObject*> cell = newPosition.getCell();
+		ManagedReference<CellObject*> cell = newPosition.getCell();
 		uint64 parentID = 0;
 
 		if (cell != NULL) {
@@ -161,6 +163,7 @@ public:
 
 		//Visuals.
 		targetPlayer->showFlyText("base_player", "fly_drag", 255, 0, 0);
+		//TODO: Figure out why all players--except for the dragged corpsed player--are only seeing the initial 5m first drag onscreen serverside but not any subsequent drags.
 
 		StringIdChatParameter stringId("healing_response", "healing_response_b5"); //"Attempting to drag %TT to your location..."
 		stringId.setTT(targetPlayer->getObjectID());
@@ -207,8 +210,25 @@ public:
 		}
 
 		if (!CollisionManager::checkLineOfSight(creature, targetPlayer)) {
-			creature->sendSystemMessage("@container_error_message:container18");
+			StringIdChatParameter nocansee;
+			nocansee.setStringId("@container_error_message:container18_prose"); //You can't see %TT. You may have to move closer to it.
+			nocansee.setTT(target);
+			creature->sendSystemMessage(nocansee);
 			return GENERALERROR;
+		}
+
+		if (targetPlayer->getLocalZone() == NULL) {
+			player->sendSystemMessage("@error_message:corpse_drag_inside"); //You cannot drag a corpse within a building. Go outside to have your corpse ejected.
+			return GENERALERROR;
+		}
+
+		if (creature->getLocalZone() == NULL) {
+			if (targetPlayer->getLocalZone() != NULL) {
+				player->sendSystemMessage("@error_message:corpse_drag_into"); //You cannot drag a corpse into a structure.
+				return GENERALERROR;
+			} else
+
+			return true;
 		}
 
 		Reference<CellObject*> targetCell = creature->getParent().castTo<CellObject*>();
@@ -218,7 +238,10 @@ public:
 
 			if (!perms->hasInheritPermissionsFromParent()) {
 				if (!targetCell->checkContainerPermission(targetPlayer, ContainerPermissions::WALKIN)) {
-					creature->sendSystemMessage("@container_error_message:container18");
+					StringIdChatParameter nocansee;
+					nocansee.setStringId("@container_error_message:container18_prose");
+					nocansee.setTT(target);
+					creature->sendSystemMessage(nocansee);
 					return GENERALERROR;
 				}
 			}

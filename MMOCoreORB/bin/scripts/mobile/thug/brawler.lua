@@ -22,9 +22,9 @@ brawler = Creature:new {
 	milk = 0,
 	tamingChance = 0,
 	ferocity = 0,
-	pvpBitmask = 0,
+	pvpBitmask = ATTACKABLE,
 	creatureBitmask = PACK + STALKER,
-	optionsBitmask = 128,
+	optionsBitmask = AIENABLED,
 	diet = HERBIVORE,
 
 	templates = {"object/mobile/dressed_brawler_trainer_02.iff",

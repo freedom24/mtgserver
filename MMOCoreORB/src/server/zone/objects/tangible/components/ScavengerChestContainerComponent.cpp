@@ -4,7 +4,7 @@
 #include "server/zone/objects/creature/CreatureObject.h"
 #include "server/zone/objects/tangible/components/EventPerkDataComponent.h"
 
-bool ScavengerChestContainerComponent::checkContainerPermission(SceneObject* container, CreatureObject* creature, uint16 permission) {
+bool ScavengerChestContainerComponent::checkContainerPermission(SceneObject* container, CreatureObject* creature, uint16 permission) const {
 	ContainerPermissions* permissions = container->getContainerPermissions();
 
 	if(!container->isEventPerkItem())
@@ -52,7 +52,17 @@ bool ScavengerChestContainerComponent::checkContainerPermission(SceneObject* con
 	return false;
 }
 
-int ScavengerChestContainerComponent::notifyObjectRemoved(SceneObject* container, SceneObject*, SceneObject* destination) {
+int ScavengerChestContainerComponent::canAddObject(SceneObject* sceneObject, SceneObject* object, int containmentType, String& errorDescription) const {
+
+	if (object->isNoTrade()) {
+		errorDescription = "@container_error_message:container28"; //You cannot put this item into this container.
+		return TransferErrorCode::INVALIDTYPE;
+	}
+
+	return ContainerComponent::canAddObject(sceneObject, object, containmentType, errorDescription);
+}
+
+int ScavengerChestContainerComponent::notifyObjectRemoved(SceneObject* container, SceneObject*, SceneObject* destination) const {
 	if (destination == NULL)
 		return 0;
 

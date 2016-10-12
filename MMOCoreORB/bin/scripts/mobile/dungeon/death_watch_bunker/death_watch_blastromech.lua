@@ -22,7 +22,7 @@ death_watch_blastromech = Creature:new {
 	ferocity = 0,
 	pvpBitmask = AGGRESSIVE + ATTACKABLE + ENEMY,
 	creatureBitmask = PACK + KILLER,
-	optionsBitmask = 128,
+	optionsBitmask = AIENABLED,
 	diet = HERBIVORE,
 
 	templates = {"object/mobile/blastromech.iff"},
@@ -37,7 +37,7 @@ death_watch_blastromech = Creature:new {
 	},
 	conversationTemplate = "",
 	defaultWeapon = "object/weapon/ranged/droid/droid_astromech_ranged.iff",
-	defaultAttack = "creaturerangedattack",
+	defaultAttack = "attack",
 }
 
 CreatureTemplates:addCreatureTemplate(death_watch_blastromech, "death_watch_blastromech")

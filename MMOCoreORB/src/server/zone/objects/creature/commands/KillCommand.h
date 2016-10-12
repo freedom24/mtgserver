@@ -144,7 +144,9 @@ public:
 			Zone* zone = creature->getZone();
 
 			if (creature->getCloseObjects() == NULL) {
+#ifdef COV_DEBUG
 				creature->info("Null closeobjects vector in KillCommand::doQueueCommand", true);
+#endif
 				zone->getInRangeObjects(creature->getPositionX(), creature->getPositionY(), range, &closeObjects, true);
 			}
 			else {
@@ -153,7 +155,7 @@ public:
 			}
 
 			for (int i = 0; i < closeObjects.size(); i++) {
-				SceneObject* targetObject = cast<SceneObject*>(closeObjects.get(i));
+				SceneObject* targetObject = static_cast<SceneObject*>(closeObjects.get(i));
 				if (targetObject->isCreatureObject()) {
 					targetCreature = cast<CreatureObject*>(targetObject);
 

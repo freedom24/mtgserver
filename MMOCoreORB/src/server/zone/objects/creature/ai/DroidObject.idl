@@ -14,8 +14,8 @@ import server.zone.objects.area.ActiveArea;
 import engine.util.u3d.Coordinate;
 import server.zone.objects.tangible.components.droid.BaseDroidModuleComponent;
 include server.zone.objects.tangible.tool.CraftingStation;
-import server.zone.templates.SharedObjectTemplate;
-import server.zone.objects.structure.StructureObject;
+include templates.SharedObjectTemplate;
+include server.zone.objects.structure.StructureObject;
 
 class DroidObject extends AiAgent {
 
@@ -53,12 +53,14 @@ class DroidObject extends AiAgent {
 	 * List of installed droid modules
 	 */
 	@dereferenced
-	protected Vector<BaseDroidModuleComponent> modules;       
+	protected transient Vector<BaseDroidModuleComponent> modules;
 
 	/**
 	 * Droid hit chance
 	 */
 	protected float hitChance;
+
+	public native void initializeTransientMembers();
 
 	/**
 	 * Droid species for Identification
@@ -255,6 +257,10 @@ class DroidObject extends AiAgent {
 	 */
 	@local
 	public native void initDroidModules();
+
+	@local
+	@preLocked
+	public native void initDroidWeapons();
 
 	/**
 	 * Returns a crafting station of the given type if droid has the appropriate module. Returns NULL otherwise.

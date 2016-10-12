@@ -7,10 +7,9 @@
 
 #include "engine/engine.h"
 
-#include "server/zone/managers/templates/PlanetMapCategory.h"
+#include "templates/manager/PlanetMapCategory.h"
 #include "server/zone/managers/planet/MapLocationTable.h"
 #include "server/zone/managers/planet/MapLocationEntry.h"
-#include "server/zone/managers/templates/TemplateManager.h"
 
 class GetMapLocationsResponseMessage : public BaseMessage {
 public:
@@ -28,8 +27,11 @@ public:
 
 		int totalEntries = 0;
 
+		unsigned int faction = 0;
 		TangibleObject* play = cast<TangibleObject*>(player);
-		unsigned int faction = play->getFaction();
+
+		if (play != NULL)
+			faction = play->getFaction();
 
 		try {
 			for (int i = 0; i < mapLocations->size(); ++i) {

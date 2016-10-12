@@ -8,9 +8,9 @@ import server.zone.objects.tangible.component.Component;
 import engine.lua.LuaObject;
 import server.zone.packets.scene.AttributeListMessage;
 import server.zone.Zone;
-import server.zone.packets.object.ObjectMenuResponse;
-import server.zone.objects.manufactureschematic.ManufactureSchematic;
-include server.zone.templates.tangible.LightsaberCrystalObjectTemplate;
+include server.zone.packets.object.ObjectMenuResponse;
+include server.zone.objects.creature.CreatureObject;
+include templates.tangible.LightsaberCrystalObjectTemplate;
 
 class LightsaberCrystalComponent extends Component {
 	protected string postTuneName;

@@ -1,5 +1,5 @@
 sith_shadow_outlaw_nonaggro = Creature:new {
-	objectName = "@mob/creature_names:shadow_outlaw",
+	objectName = "@mob/creature_names:shadow_outlaw_nonaggro",
 	socialGroup = "sith_shadow",
 	faction = "sith_shadow_nonaggro",
 	level = 68,
@@ -22,7 +22,7 @@ sith_shadow_outlaw_nonaggro = Creature:new {
 	ferocity = 0,
 	pvpBitmask = ATTACKABLE,
 	creatureBitmask = PACK + KILLER,
-	optionsBitmask = 128,
+	optionsBitmask = AIENABLED,
 	diet = HERBIVORE,
 
 	templates = {

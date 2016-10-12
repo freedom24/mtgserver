@@ -7,7 +7,6 @@
 
 #include "server/zone/objects/scene/SceneObject.h"
 #include "server/zone/objects/tangible/pharmaceutical/RevivePack.h"
-#include "server/zone/objects/tangible/pharmaceutical/RangedStimPack.h"
 #include "server/zone/ZoneServer.h"
 #include "server/zone/managers/player/PlayerManager.h"
 #include "server/zone/objects/creature/events/InjuryTreatmentTask.h"
@@ -58,17 +57,18 @@ public:
 				PlayerObject* ghost = consentOwner->getPlayerObject();
 
 				if (!ghost->hasInConsentList(player->getFirstName().toLowerCase())) {
-					creature->sendSystemMessage("@healing_response:must_be_grouped"); //You must be grouped with or have consent from your resuscitation target!
-					return false;
+					if ((consentOwner->getWeapon() != NULL && consentOwner->getWeapon()->isJediWeapon()) || consentOwner->hasSkill("force_title_jedi_rank_02")) {
+						creature->sendSystemMessage("@healing_response:jedi_must_consent"); // You must have consent from a jedi resuscitation target!
+						return false;
+					} else {
+						creature->sendSystemMessage("@healing_response:must_be_grouped"); //You must be grouped with or have consent from your resuscitation target!
+						return false;
+					}
 				}
-				/*if (!player->hasConsentFrom(consentOwner)) {
-					creature->sendSystemMessage("@healing_response:must_be_grouped"); //You must be grouped with or have consent from your resuscitation target!
-					return false;
-				}*/
+
 			} else {
 				return false;
 			}
-
 		}
 
 		if (creature->getHAM(CreatureAttribute::MIND) < mindCostNew) {
@@ -123,20 +123,16 @@ public:
 			for (int i = 0; i < inventory->getContainerObjectsSize(); ++i) {
 				SceneObject* object = inventory->getContainerObject(i);
 
-				if (!object->isTangibleObject())
+				if (!object->isPharmaceuticalObject())
 					continue;
 
-				TangibleObject* item = cast<TangibleObject*>( object);
+				PharmaceuticalObject* pharma = cast<PharmaceuticalObject*>(object);
 
-				if (item->isPharmaceuticalObject()) {
-					PharmaceuticalObject* pharma = cast<PharmaceuticalObject*>( item);
+				if (pharma->isRevivePack()) {
+					RevivePack* revivePack = cast<RevivePack*>(pharma);
 
-					if (pharma->isRevivePack()) {
-						RevivePack* revivePack = cast<RevivePack*>( pharma);
-
-						if (revivePack->getMedicineUseRequired() <= medicineUse)
-							return revivePack;
-					}
+					if (revivePack->getMedicineUseRequired() <= medicineUse)
+						return revivePack;
 				}
 			}
 		}
@@ -191,7 +187,7 @@ public:
 			return GENERALERROR;
 		}
 
-		if (!creatureTarget->isInRange(creature, range + creatureTarget->getTemplateRadius() + creature->getTemplateRadius()))
+		if(!checkDistance(creature, creatureTarget, range))
 			return TOOFAR;
 
 		uint64 objectId = 0;
@@ -223,6 +219,8 @@ public:
 		int healedMind = creatureTarget->healDamage(creature, CreatureAttribute::MIND, mindToHeal);
 
 		creatureTarget->setPosture(CreaturePosture::UPRIGHT);
+		
+		creatureTarget->removeFeignedDeath();
 
 		int healedHealthWounds = creatureTarget->healWound(creature, CreatureAttribute::HEALTH, (int) (round(revivePack->getHealthWoundHealed())));
 		int healedActionWounds = creatureTarget->healWound(creature, CreatureAttribute::ACTION, (int) (round(revivePack->getActionWoundHealed())));

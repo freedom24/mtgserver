@@ -8,14 +8,11 @@
 #include "server/zone/objects/structure/StructureObject.h"
 #include "server/zone/ZoneServer.h"
 #include "server/zone/Zone.h"
-#include "server/zone/templates/tangible/SharedStructureObjectTemplate.h"
 #include "server/zone/objects/structure/events/StructureMaintenanceTask.h"
 #include "server/zone/objects/installation/InstallationObject.h"
 #include "server/zone/objects/building/BuildingObject.h"
 #include "server/zone/objects/building/components/CityHallZoneComponent.h"
 #include "server/zone/objects/tangible/sign/SignObject.h"
-#include "server/zone/managers/player/PlayerManager.h"
-#include "server/zone/managers/object/ObjectManager.h"
 #include "server/zone/managers/structure/StructureManager.h"
 #include "server/zone/objects/player/PlayerObject.h"
 #include "server/zone/objects/guild/GuildObject.h"
@@ -27,13 +24,16 @@
 #include "server/zone/objects/player/sui/inputbox/SuiInputBox.h"
 #include "server/zone/objects/player/sui/transferbox/SuiTransferBox.h"
 
-#include "server/zone/templates/appearance/MeshAppearanceTemplate.h"
-#include "server/zone/templates/appearance/PortalLayout.h"
-#include "server/zone/templates/tangible/SharedStructureObjectTemplate.h"
+#include "templates/appearance/MeshAppearanceTemplate.h"
+#include "templates/appearance/PortalLayout.h"
+#include "templates/tangible/SharedStructureObjectTemplate.h"
 #include "server/zone/managers/city/PayPropertyTaxTask.h"
 
 void StructureObjectImplementation::loadTemplateData(SharedObjectTemplate* templateData) {
 	TangibleObjectImplementation::loadTemplateData(templateData);
+
+	if (!templateData->isSharedStructureObjectTemplate())
+		return;
 
 	SharedStructureObjectTemplate* structureTemplate = dynamic_cast<SharedStructureObjectTemplate*>(templateData);
 

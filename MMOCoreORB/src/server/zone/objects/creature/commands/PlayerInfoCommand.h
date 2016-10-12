@@ -39,16 +39,27 @@ public:
 
 		ManagedReference<SuiMessageBox*> box = new SuiMessageBox(creature, 0);
 
-		box->setPromptTitle("Player Info"); //Register City
-		//box->setPromptText("@city/city:register_d");
+		box->setPromptTitle("Player Info");
 
 		Locker smodLocker(targetObject->getSkillModMutex());
 
 		SkillModList* skillModList = targetObject->getSkillModList();
 
 		StringBuffer promptText;
+		promptText << "Name: " << targetObject->getCustomObjectName().toString()  << endl;
 		promptText << "ObjectID: " << targetObject->getObjectID() << endl;
-		promptText << "SkillMods:" << endl;
+
+		if (ghost != NULL) {
+			promptText << "Online Status: ";
+
+			if(ghost->isOnline())
+				promptText << "ONLINE" << endl;
+			else {
+				promptText << "OFFLINE. Last On: " << ghost->getLastLogout()->getFormattedTime() << endl;
+			}
+		}
+
+		promptText << endl << "SkillMods:" << endl;
 		promptText << skillModList->getPrintableSkillModList() << endl;
 
 		smodLocker.release();
@@ -65,51 +76,55 @@ public:
 			totalSkillPointsWasted += skill->getSkillPointsRequired();
 		}
 
-		promptText << "Level: " << targetObject->getLevel() << endl;
+		promptText << endl << "Level: " << targetObject->getLevel() << endl;
 
-		promptText << "totalSkillPointsWasted = " << totalSkillPointsWasted << " skillPoints var:" << ghost->getSkillPoints() << endl;
+		if (ghost != NULL) {
+			promptText << "totalSkillPointsWasted = " << totalSkillPointsWasted << " skillPoints var:" << ghost->getSkillPoints() << endl;
 
-		promptText << "Ability list:" << endl;
+			promptText << endl << "Ability list:" << endl;
 
-		AbilityList* abilityList = ghost->getAbilityList();
+			AbilityList* abilityList = ghost->getAbilityList();
 
-		for (int i = 0; i < abilityList->size(); ++i) {
-			Ability* skill = abilityList->get(i);
-			promptText << skill->getAbilityName() << endl;
-		}
+			for (int i = 0; i < abilityList->size(); ++i) {
+				Ability* skill = abilityList->get(i);
+				promptText << skill->getAbilityName() << endl;
+			}
 
-		if (creature->getPlayerObject()->getAdminLevel() >= 15) {
-			Vector<byte>* holoProfessions = ghost->getHologrindProfessions();
+			if (creature->getPlayerObject()->getAdminLevel() >= 15) {
+				Vector<byte>* holoProfessions = ghost->getHologrindProfessions();
 
-			promptText << endl;
-			promptText << "Hologrind professions:\n";
+				promptText << endl;
+				promptText << "Hologrind professions:\n";
 
-			BadgeList* badgeList = BadgeList::instance();
-			if (badgeList != NULL) {
-				for (int i = 0; i < holoProfessions->size(); ++i) {
-					byte prof = holoProfessions->get(i);
-					const Badge* badge = badgeList->get(prof);
-					if (prof) {
-						String stringKey = badge->getKey();
-						promptText << "@skl_n:" + stringKey << " badgeid: " << String::valueOf(prof)<<  endl;
-					} else {
-						promptText << "unknown profession " << String::valueOf(prof) << endl;
+				BadgeList* badgeList = BadgeList::instance();
+				if (badgeList != NULL) {
+					for (int i = 0; i < holoProfessions->size(); ++i) {
+						byte prof = holoProfessions->get(i);
+						const Badge* badge = badgeList->get(prof);
+						if (prof) {
+							String stringKey = badge->getKey();
+							promptText << "@skl_n:" + stringKey << " badgeid: " << String::valueOf(prof)<<  endl;
+						} else {
+							promptText << "unknown profession " << String::valueOf(prof) << endl;
+						}
 					}
 				}
-			}
 
-			promptText << endl << "Visibility = " << ghost->getVisibility() << endl;
+				promptText << endl << "Visibility = " << ghost->getVisibility() << endl;
 
-			MissionManager* missionManager = creature->getZoneServer()->getMissionManager();
-			Vector<uint64>* hunterList =  missionManager->getHuntersHuntingTarget(targetObject->getObjectID());
+				MissionManager* missionManager = creature->getZoneServer()->getMissionManager();
+				Vector<uint64>* hunterList =  missionManager->getHuntersHuntingTarget(targetObject->getObjectID());
 
-			if (hunterList != NULL) {
-				for (int i = 0; i < hunterList->size(); i++) {
-					promptText << "Hunter #" << i << ": " << hunterList->get(i) << endl;
+				if (hunterList != NULL) {
+					for (int i = 0; i < hunterList->size(); i++) {
+						promptText << "Hunter #" << i << ": " << hunterList->get(i) << endl;
+					}
 				}
-			}
 
-			promptText << endl;
+				promptText << endl;
+			}
+		} else {
+			promptText << "ERROR: PlayerObject NULL" << endl;
 		}
 
 		ManagedReference<SceneObject*> inventory = targetObject->getSlottedObject("inventory");

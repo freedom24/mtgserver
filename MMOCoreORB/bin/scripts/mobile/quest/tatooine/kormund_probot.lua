@@ -22,14 +22,14 @@ kormund_probot = Creature:new {
 	ferocity = 0,
 	pvpBitmask = ATTACKABLE,
 	creatureBitmask = NONE,
-	optionsBitmask = 128,
+	optionsBitmask = AIENABLED,
 	diet = HERBIVORE,
 
 	templates = {"object/mobile/probot.iff"},
 	lootGroups = {},
 	conversationTemplate = "",
-	defaultWeapon = "object/weapon/ranged/droid/droid_droideka_ranged.iff",
-	defaultAttack = "creaturerangedattack"
+	weapons = {"droid_probot_ranged"},
+	defaultAttack = "attack"
 }
 
 CreatureTemplates:addCreatureTemplate(kormund_probot, "kormund_probot")

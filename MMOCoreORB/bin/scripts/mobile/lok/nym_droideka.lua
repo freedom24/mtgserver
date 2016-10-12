@@ -22,7 +22,7 @@ nym_droideka = Creature:new {
 	ferocity = 0,
 	pvpBitmask = ATTACKABLE,
 	creatureBitmask = PACK + KILLER,
-	optionsBitmask = 128,
+	optionsBitmask = AIENABLED,
 	diet = HERBIVORE,
 
 	templates = {"object/mobile/droideka.iff"},
@@ -39,7 +39,7 @@ nym_droideka = Creature:new {
 			}
 		}
 	},
-	defaultAttack = "creaturerangedattack",
+	defaultAttack = "attack",
 	defaultWeapon = "object/weapon/ranged/droid/droid_droideka_ranged.iff",
 }
 

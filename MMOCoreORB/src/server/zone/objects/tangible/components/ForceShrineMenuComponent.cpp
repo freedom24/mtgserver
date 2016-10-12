@@ -19,7 +19,7 @@
 
 #include "server/zone/ZoneServer.h"
 
-void ForceShrineMenuComponent::fillObjectMenuResponse(SceneObject* sceneObject, ObjectMenuResponse* menuResponse, CreatureObject* player){
+void ForceShrineMenuComponent::fillObjectMenuResponse(SceneObject* sceneObject, ObjectMenuResponse* menuResponse, CreatureObject* player) const {
 
 	TangibleObjectMenuComponent::fillObjectMenuResponse(sceneObject, menuResponse, player);
 
@@ -28,7 +28,7 @@ void ForceShrineMenuComponent::fillObjectMenuResponse(SceneObject* sceneObject, 
 
 }
 
-int ForceShrineMenuComponent::handleObjectMenuSelect(SceneObject* sceneObject, CreatureObject* creature, byte selectedID) {
+int ForceShrineMenuComponent::handleObjectMenuSelect(SceneObject* sceneObject, CreatureObject* creature, byte selectedID) const {
 	if (selectedID != 213)
 		return 0;
 
@@ -66,9 +66,9 @@ int ForceShrineMenuComponent::handleObjectMenuSelect(SceneObject* sceneObject, C
 
 		SkillManager::instance()->awardSkill("force_title_jedi_rank_02", creature, true, true, true);
 
-		creature->playEffect("clienteffect/entertainer_dazzle_level_3.cef", ""); // Not sure if it's the right one for this.
+		creature->playEffect("clienteffect/trap_electric_01.cef", "");
 
-		PlayMusicMessage* pmm = new PlayMusicMessage("sound/intro.snd");
+		PlayMusicMessage* pmm = new PlayMusicMessage("sound/music_become_jedi.snd");
 		creature->sendMessage(pmm);
 
 		ghost->setJediState(2);
@@ -115,7 +115,7 @@ int ForceShrineMenuComponent::handleObjectMenuSelect(SceneObject* sceneObject, C
 	return 0;
 }
 
-void ForceShrineMenuComponent::findTrainerObject(CreatureObject* player, PlayerObject* ghost) {
+void ForceShrineMenuComponent::findTrainerObject(CreatureObject* player, PlayerObject* ghost) const {
 
 	// Trainer number. Pick a random trainer, there are at least 600 in the galaxy.
 	ZoneServer* zserv = player->getZoneServer();
@@ -133,7 +133,7 @@ void ForceShrineMenuComponent::findTrainerObject(CreatureObject* player, PlayerO
 	Vector3 coords;
 	String zoneName = "";
 
-	// This specifies the number of attempts at a retry. The first is min, second int is max amount of attemps.
+	// This specifies the number of attempts at a retry. The first is min, second int is max amount of attempts.
 	int counter = 0;
 	int retriesCounter = 40;
 
@@ -168,6 +168,10 @@ void ForceShrineMenuComponent::findTrainerObject(CreatureObject* player, PlayerO
 			continue;
 		}
 
+		if (!(trainerCreo->getOptionsBitmask() & OptionBitmask::CONVERSE)) {
+			continue;
+		}
+
 		ManagedReference<CityRegion*> city = trainerCreo->getCityRegion();
 
 		// Make sure it's not a player-city trainer.
@@ -182,5 +186,5 @@ void ForceShrineMenuComponent::findTrainerObject(CreatureObject* player, PlayerO
 	}
 
 	ghost->setTrainerCoordinates(coords);
-	ghost->setTrainerZoneName(zoneName); // For the Waypoint.
+	ghost->setTrainerZoneName(zoneName); // For the waypoint.
 }

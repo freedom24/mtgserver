@@ -61,6 +61,7 @@ includeFile("conversations/tasks/hero_of_tatooine/hero_of_tat_ranchers_wife_conv
 
 -- Events
 includeFile("conversations/events/event_promoter_conv.lua")
+includeFile("conversations/events/race_droid_conv.lua")
 
 -- Epic Quests
 includeFile("conversations/themepark/epic_quests/goru_conv.lua")
@@ -110,7 +111,6 @@ includeFile("conversations/dungeon/geonosian_lab/biogenic_security_tech_convo.lu
 -- ** OTHER **
 
 includeFile("conversations/trainer/trainers_conv.lua")
-includeFile("conversations/trainer/trainer_fs_conv.lua")
 
 -- Missions
 includeFile("conversations/mission/deliver_npc.lua")
@@ -120,9 +120,13 @@ includeFile("conversations/mission/informant_npc.lua")
 includeFile("conversations/recruiter/rebel_recruiter_conv.lua")
 includeFile("conversations/recruiter/imperial_recruiter_conv.lua")
 
+-- Heralds
+includeFile("conversations/tasks/heralds/herald_conv.lua")
+includeFile("conversations/tasks/heralds/herald_lok1_conv.lua")
+includeFile("conversations/tasks/heralds/herald_lok2_conv.lua")
+
 -- Tasks
 includeFile("conversations/tasks/audience_member_conv.lua")
-includeFile("conversations/tasks/herald_conv.lua")
 includeFile("conversations/tasks/kidnapped_noble_conv.lua")
 includeFile("conversations/tasks/ris_armor_quest_conv.lua")
 includeFile("conversations/tasks/librarian_conv.lua")
@@ -155,6 +159,7 @@ includeFile("conversations/trials/padawan/the_ring_01_conv.lua")
 includeFile("conversations/trials/padawan/the_ring_02_conv.lua")
 
 -- Village
+includeFile("conversations/village/fs_village_convo3_m_conv.lua")
 includeFile("conversations/village/fs_village_convo4_f_conv.lua")
 includeFile("conversations/village/fs_village_convo5_f_conv.lua")
 includeFile("conversations/village/fs_village_convo6_m_conv.lua")
@@ -170,9 +175,15 @@ includeFile("conversations/village/phase1/whip_phase1_conv.lua")
 includeFile("conversations/village/phase1/quharek_phase1_conv.lua")
 includeFile("conversations/village/phase1/fs_reflex1_prisoner_conv.lua")
 includeFile("conversations/village/phase2/whip_phase2_conv.lua")
+includeFile("conversations/village/phase2/quharek_phase2_conv.lua")
+includeFile("conversations/village/phase2/qtqc_phase2_conv.lua")
 includeFile("conversations/village/phase2/elder_phase2_conv.lua")
 includeFile("conversations/village/phase2/dageerin_phase2_conv.lua")
 includeFile("conversations/village/phase3/dageerin_phase3_conv.lua")
+includeFile("conversations/village/phase3/elder_phase3_conv.lua")
+includeFile("conversations/village/phase4/elder_phase4_conv.lua")
+includeFile("conversations/village/phase4/fs_gadget_specialist_phase4_conv.lua")
+includeFile("conversations/village/phase4/chief_engineer_phase4_conv.lua")
 
 -- Race Tracks
 includeFile("conversations/racetracks/agrilatswampconversation.lua")
@@ -194,3 +205,6 @@ includeFile("conversations/record_keepers/record_keeper_rebel_conv.lua")
 
 -- Personality Conversations
 includeFile("conversations/pet/pets_conv.lua")
+
+-- Misc
+includeFile("conversations/misc/philosopher_conv.lua")

@@ -21,7 +21,7 @@
 
 VendorDataComponent::VendorDataComponent() : AuctionTerminalDataComponent(), adBarkingMutex() {
 	ownerId = 0;
-	auctionManager = NULL;
+	auctionMan = NULL;
 	initialized = false;
 	vendorSearchEnabled = false;
 	disabled = false;
@@ -30,7 +30,6 @@ VendorDataComponent::VendorDataComponent() : AuctionTerminalDataComponent(), adB
 	awardUsageXP = 0;
 	adBarking = false;
 	mail1Sent = false;
-	mail2Sent = false;
 	barkMessage = "";
 	lastBark = 0;
 	originalDirection = 1000;
@@ -49,7 +48,6 @@ void VendorDataComponent::addSerializableVariables() {
 	addSerializableVariable("lastSuccessfulUpdate", &lastSuccessfulUpdate);
 	addSerializableVariable("adBarking", &adBarking);
 	addSerializableVariable("mail1Sent", &mail1Sent);
-	addSerializableVariable("mail2Sent", &mail2Sent);
 	addSerializableVariable("emptyTimer", &emptyTimer);
 	addSerializableVariable("barkMessage", &barkMessage);
 	addSerializableVariable("barkMood", &barkMood);
@@ -137,34 +135,24 @@ void VendorDataComponent::runVendorUpdate() {
 		String sender = strongParent->getDisplayedName();
 		UnicodeString subject("@auction:vendor_status_subject");
 
-		if (!mail1Sent && time(0) - emptyTimer.getTime() > FIRSTWARNING) {
-			StringIdChatParameter body("@auction:vendor_status_unaccessed");
+		if (!mail1Sent && time(0) - emptyTimer.getTime() > EMPTYWARNING) {
+			StringIdChatParameter body("@auction:vendor_status_endangered");
 			body.setTO(strongParent->getDisplayedName());
 			if (cman != NULL)
 				cman->sendMail(sender, subject, body, owner->getFirstName());
 			mail1Sent = true;
 		}
 
-		else if (!mail2Sent && time(0) - emptyTimer.getTime() > SECONDWARNING) {
-			StringIdChatParameter body("@auction:vendor_status_endangered");
-			body.setTO(strongParent->getDisplayedName());
-			if (cman != NULL)
-				cman->sendMail(sender, subject, body, owner->getFirstName());
-			mail2Sent = true;
-		}
-
 		else if (time(0) - emptyTimer.getTime() > EMPTYDELETE) {
 			StringIdChatParameter body("@auction:vendor_status_deleted");
 			if (cman != NULL)
 				cman->sendMail(sender, subject, body, owner->getFirstName());
-			VendorManager::instance()->destroyVendor(strongParent);
-			vendorCheckTask->cancel();
+			VendorManager::instance()->destroyVendor(vendor);
 			return;
 		}
 
 	} else {
 		mail1Sent = false;
-		mail2Sent = false;
 		emptyTimer.updateToCurrentTime();
 	}
 
@@ -185,8 +173,7 @@ void VendorDataComponent::runVendorUpdate() {
 			StringIdChatParameter body("@auction:vendor_status_deleted");
 			if (cman != NULL)
 				cman->sendMail(sender, subject, body, owner->getFirstName());
-			VendorManager::instance()->destroyVendor(strongParent);
-			vendorCheckTask->cancel();
+			VendorManager::instance()->destroyVendor(vendor);
 		}
 
 	} else {
@@ -340,10 +327,9 @@ void VendorDataComponent::handleWithdrawMaintanence(int value) {
 
 void VendorDataComponent::setVendorSearchEnabled(bool enabled) {
 	ManagedReference<SceneObject*> strongParent = parent.get();
-	if (strongParent == NULL || strongParent->getZoneServer() == NULL)
-		return;
+	ManagedReference<AuctionManager*> auctionManager = auctionMan.get();
 
-	if(strongParent == NULL || strongParent->getZone() == NULL)
+	if (auctionManager == NULL || strongParent == NULL || strongParent->getZoneServer() == NULL || strongParent->getZone() == NULL)
 		return;
 
 	vendorSearchEnabled = enabled;
@@ -385,11 +371,11 @@ void VendorDataComponent::performVendorBark(SceneObject* target) {
 				StringIdChatParameter message;
 				message.setStringId(barkMessage);
 				message.setTT(player_p->getObjectID());
-				chatMessage = new SpatialChat(vendor_p->getObjectID(), player_p->getObjectID(), message, player_p->getObjectID(), Races::getMoodID(data->getAdMood()), 0);
+				chatMessage = new SpatialChat(vendor_p->getObjectID(), player_p->getObjectID(), player_p->getObjectID(), message, 50, 0, Races::getMoodID(data->getAdMood()), 0, 0);
 
 			} else {
 				UnicodeString uniMessage(barkMessage);
-				chatMessage = new SpatialChat(vendor_p->getObjectID(), player_p->getObjectID(), uniMessage, player_p->getObjectID(), Races::getMoodID(data->getAdMood()), 0, 0);
+				chatMessage = new SpatialChat(vendor_p->getObjectID(), player_p->getObjectID(), player_p->getObjectID(), uniMessage, 50, 0, Races::getMoodID(data->getAdMood()), 0, 0);
 			}
 
 			vendor_p->broadcastMessage(chatMessage, true);
@@ -406,8 +392,13 @@ void VendorDataComponent::scheduleVendorCheckTask(int delay) {
 	if (strongParent == NULL)
 		return;
 
-	if(vendorCheckTask == NULL)
+	if (vendorCheckTask == NULL)
 		vendorCheckTask = new UpdateVendorTask(strongParent);
 
 	vendorCheckTask->schedule(1000 * 60 * delay);
+}
+
+void VendorDataComponent::cancelVendorCheckTask() {
+	if (vendorCheckTask != NULL)
+		vendorCheckTask->cancel();
 }

@@ -12,12 +12,12 @@
 #include "server/zone/objects/player/PlayerObject.h"
 #include "server/zone/objects/player/badges/Badge.h"
 #include "server/zone/managers/player/PlayerManager.h"
-#include "server/zone/managers/templates/TemplateManager.h"
-#include "server/zone/templates/datatables/DataTableIff.h"
-#include "server/zone/templates/datatables/DataTableRow.h"
+#include "templates/manager/TemplateManager.h"
+#include "templates/datatables/DataTableIff.h"
+#include "templates/datatables/DataTableRow.h"
 #include "server/zone/managers/crafting/schematicmap/SchematicMap.h"
 #include "server/zone/packets/creature/CreatureObjectDeltaMessage4.h"
-#include "../../packets/creature/CreatureObjectDeltaMessage6.h"
+#include "server/zone/packets/creature/CreatureObjectDeltaMessage6.h"
 #include "server/zone/objects/tangible/weapon/WeaponObject.h"
 #include "server/zone/objects/tangible/wearables/RobeObject.h"
 
@@ -32,6 +32,7 @@ SkillManager::SkillManager()
 }
 
 SkillManager::~SkillManager() {
+	delete performanceManager;
 }
 
 int SkillManager::includeFile(lua_State* L) {
@@ -603,7 +604,7 @@ bool SkillManager::canLearnSkill(const String& skillName, CreatureObject* creatu
 		return false;
 	}
 
-	if (!fullfillsSkillPrerequisites(skillName, creature)) {
+	if (!fulfillsSkillPrerequisites(skillName, creature)) {
 		return false;
 	}
 
@@ -629,8 +630,8 @@ bool SkillManager::canLearnSkill(const String& skillName, CreatureObject* creatu
 	return true;
 }
 
-bool SkillManager::fullfillsSkillPrerequisitesAndXp(const String& skillName, CreatureObject* creature) {
-	if (!fullfillsSkillPrerequisites(skillName, creature)) {
+bool SkillManager::fulfillsSkillPrerequisitesAndXp(const String& skillName, CreatureObject* creature) {
+	if (!fulfillsSkillPrerequisites(skillName, creature)) {
 		return false;
 	}
 
@@ -651,10 +652,14 @@ bool SkillManager::fullfillsSkillPrerequisitesAndXp(const String& skillName, Cre
 	return true;
 }
 
-bool SkillManager::fullfillsSkillPrerequisites(const String& skillName, CreatureObject* creature) {
+bool SkillManager::fulfillsSkillPrerequisites(const String& skillName, CreatureObject* creature) {
 	Skill* skill = skillMap.get(skillName.hashCode());
 
 	if (skill == NULL) {
+		return false;
+	}
+
+	if (skillName.contains("admin_") && !(creature->getPlayerObject()->getAdminLevel() > 0)) {
 		return false;
 	}
 
